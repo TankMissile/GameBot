@@ -28,18 +28,27 @@ namespace GameBot
             {
                 botToken = System.IO.File.ReadAllText(@"token.txt");
 
-                //event subscriptions
-                _client.Log += Log;
+                if (botToken != "") {
+                    //event subscriptions
+                    _client.Log += Log;
 
-                await RegisterCommandsAsync();
+                    await RegisterCommandsAsync();
 
-                await _client.LoginAsync(Discord.TokenType.Bot, botToken);
+                    await _client.LoginAsync(Discord.TokenType.Bot, botToken);
 
-                await _client.StartAsync();
+                    await _client.StartAsync();
+
+                    await _client.SetGameAsync("+help");
+                }
+                else
+                {
+                    Console.WriteLine("Error!  No bot token.  Enter your bot's token into token.txt in the root directory of this bot.");
+                }
             }
             else
             {
-                Console.WriteLine("Error!  No bot token.  Create a text file in the root directory named token.txt containing your bot token.");
+                File.Create(@"token.txt");
+                Console.WriteLine("Error!  No bot token.  Enter your bot's token into token.txt in the root directory of this bot");
             }
 
             await Task.Delay(-1);
