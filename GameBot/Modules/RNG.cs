@@ -54,7 +54,7 @@ namespace GameBot.Modules
         {
             if (arg1 == "")
             {
-                await ReplyAsync("You should get " + GetRandomLineInFile(@"food.txt" + " today."));
+                await ReplyAsync("You should get " + GetRandomLineInFile(@"food.txt") + " today.");
             }
             else if (arg1.ToLower() == "add")
             {
@@ -76,9 +76,10 @@ namespace GameBot.Modules
         }
 
         [Command("joke")]
-        [Summary("Tell an inside joke, that normal people will need explained.")]
+        [Summary("Tell an inside joke that normal people will need explained.")]
         public async Task JokeAsync(string arg = "", [Remainder] string joke = "")
         {
+
             if(arg == "")
             {
                 await ReplyAsync(GetRandomLineInFile(@"jokes.txt"), true);
@@ -94,7 +95,21 @@ namespace GameBot.Modules
             }
             else if (arg.ToLower() == "list")
             {
-                await ReplyAsync("Sorry, this isn't implemented yet.");
+                var dm = await Context.User.GetOrCreateDMChannelAsync();
+
+                string[] list = File.ReadAllLines(@"jokes.txt");
+
+                string msg = "";
+                for (i = 0; i < list.Length; i++)
+                {
+                    msg += (i + 1) + ". " + list[i] + "\n";
+                    if ((i+1) % 30 == 0)
+                    {
+                        await dm.SendMessageAsync("```" + msg + "```");
+                        await Task.Delay(500);
+                        msg = "";
+                    }
+                }
             }
             else
             {

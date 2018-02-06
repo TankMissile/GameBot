@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace GameBot.Modules
 {
-    class Squad : ModuleBase<SocketCommandContext>
+    public class Squad : ModuleBase<SocketCommandContext>
     {
         [Command("squad")]
         [Alias("assemble")]
@@ -19,7 +19,7 @@ namespace GameBot.Modules
             }
             else
             {
-                await ReplyAsync(arg.ToUpper() + ", ASSEMBLE!!!");
+                await ReplyAsync(arg.ToUpper() + ", ASSEMBLE!!!", true);
             }
         }
 
@@ -34,7 +34,7 @@ namespace GameBot.Modules
             }
             else
             {
-                await ReplyAsync(arg.ToUpper() + ", ASSEMBRUUUU!!!");
+                await ReplyAsync(arg.ToUpper() + ", ASSEMBRUUUUU!!!");
             }
         }
     }
