@@ -30,12 +30,19 @@ namespace GameBot.Modules
         {
             if (arg == "")
             {
-                await ReplyAsync("SQKUADO, ASSEMBRUUUUU!!!", true);
+                await ReplyAsync("SKUADO, ASSEMBRUUUUU!!!", true);
             }
             else
             {
                 await ReplyAsync(arg.ToUpper() + ", ASSEMBRUUUUU!!!");
             }
+        }
+
+        [Command("disperse")]
+        [Summary("Disperse the squad!")]
+        public async Task DisperseAsync([Remainder] string arg = "")
+        {
+            await ReplyAsync("SQUAD, DISPERSE!!!", true);
         }
     }
 }

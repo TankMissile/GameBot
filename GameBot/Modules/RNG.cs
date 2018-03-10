@@ -79,7 +79,6 @@ namespace GameBot.Modules
         [Summary("Tell an inside joke that normal people will need explained.")]
         public async Task JokeAsync(string arg = "", [Remainder] string joke = "")
         {
-
             if(arg == "")
             {
                 await ReplyAsync(GetRandomLineInFile(@"jokes.txt"), true);
@@ -87,7 +86,7 @@ namespace GameBot.Modules
             else if (arg.ToLower() == "add" && joke != "")
             {
                 AppendStringToFile(@"jokes.txt", joke);
-                await ReplyAsync("Added joke to list with ID " + (File.ReadLines(@"jokes.txt").Count() + 1));
+                await ReplyAsync("Added joke to list with ID " + (File.ReadLines(@"jokes.txt").Count()));
             }
             else if (Int32.TryParse(arg, out int i))
             {

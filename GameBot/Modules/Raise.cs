@@ -6,20 +6,29 @@ using System.Threading.Tasks;
 
 namespace GameBot.Modules
 {
-    public class Raise : ModuleBase<SocketCommandContext>
+    public class Text : ModuleBase<SocketCommandContext>
     {
         [Command("raise")]
         public async Task RaiseAsync(string name = "")
         {
             if (name.ToLower() == "gamebot" || name == "")
             {
-                await ReplyAsync("***I LIVE!!!!***", true);
+                await ReplyAsync("I LIVE!!!!", true);
             }
             else
             {
-                await ReplyAsync("*BREATHE, " + name.ToUpper() + ",* ***BREATHE!***", true);
+                await ReplyAsync("COME BACK TO US, " + name.ToUpper() + "!!!", true);
             }
         }
 
+        [Command("Suicide")]
+        public async Task SuicideAsync()
+        {
+            await ReplyAsync("```  ═╦═══╗\n" +
+                                "   Ó   ║\n" +
+                                "  /|\\  ║\n" +
+                                "  / \\  ║\n" +
+                                " ══════╩══```");
+        }
     }
 }
