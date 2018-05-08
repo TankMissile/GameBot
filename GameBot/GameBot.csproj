@@ -8,11 +8,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Discord.Net" Version="1.0.2" />
+    <Compile Remove="Waifus\**" />
+    <EmbeddedResource Remove="Waifus\**" />
+    <None Remove="Waifus\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Waifus\" />
+    <None Remove="food.txt" />
+    <None Remove="jokes.txt" />
+    <None Remove="token.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Discord.Net" Version="1.0.2" />
   </ItemGroup>
 
 </Project>

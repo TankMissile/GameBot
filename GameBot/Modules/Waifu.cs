@@ -1,10 +1,11 @@
 ﻿using Discord.Commands;
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 using System.Linq;
-using System.IO;
+using static System.IO.Directory;
+using System.Text.RegularExpressions;
+using System.Net;
 
 namespace GameBot.Modules
 {
@@ -15,47 +16,80 @@ namespace GameBot.Modules
         [Command("waifu")]
         public async Task WaifuAsync()
         {
-            var files = System.IO.Directory.GetFiles(@"Waifus\");
+            var files = GetFiles(@"Waifus\");
 
             await Context.Channel.SendFileAsync(files[r.Next(files.Length)]);
         }
 
         [Command("waifu")]
-        public async Task WaifuAsync(string name)
+        public async Task WaifuAsync(string arg, params string[] tags)
         {
-            List<string> files = new List<string>(System.IO.Directory.GetFiles(@"Waifus\", "*.png"));
-            files.AddRange(new List<string>(System.IO.Directory.GetFiles(@"Waifus\", "*.gif")));
-            files.AddRange(new List<string>(System.IO.Directory.GetFiles(@"Waifus\", "*.jpg")));
-            files.Sort();
-
-            //ugly, but hopefully compares the two strings ignoring case, while also omitting the file path from the search
-            await Context.Channel.SendFileAsync(files.FirstOrDefault<string>(s => Path.GetFileNameWithoutExtension(s).ToLower().Contains(name.ToLower())));
-        }
-
-        [Command("waifu")]
-        public async Task WaifuAsync(string arg, string name)
-        {
-            if (!System.IO.Directory.Exists(@"Waifus\"))
+            if (!Exists(@"Waifus\"))
             {
-                Directory.CreateDirectory(@"Waifus\");
+                CreateDirectory(@"Waifus\");
             }
-
-            var files = System.IO.Directory.GetFiles(@"Waifus\");
 
             if (arg == "")
             {
+                var files = GetFiles(@"Waifus\");
                 await Context.Channel.SendFileAsync(files[r.Next(files.Length)]);
+            }
+            else if (arg == "help")
+            {
+                await ReplyAsync("usage: \n```+waifu : retrieves your soulmate, scientifically.\n" +
+                    "+waifu [name] : retrieves your soulmate, in a more specific fashion." +
+                    "+waifu add [tags ...] : Upload a new waifu```");
             }
             else if (arg == "add")
             {
-                var attachments = Context.Message.Attachments.GetEnumerator();
-                await ReplyAsync("`Not Implemented yet.`");
+                if (Context.Message.Attachments.Count == 0)
+                {
+                    await Context.Channel.SendMessageAsync("No file attached! Make sure you upload an image and write the command as the comment for it.");
+                }
+
+                foreach(var attachment in Context.Message.Attachments)
+                {
+                    Regex acceptedTypes = new Regex("\\.(png|gif|jpg)$");
+                    if (!acceptedTypes.IsMatch(attachment.Filename))
+                    {
+                        await Context.Channel.SendMessageAsync("Attachment is not an accepted file type.  Only accepts: .png .gif .jpg");
+                        return;
+                    }
+
+                    string path = "";
+                    foreach(string s in tags)
+                    {
+                        path += s + "_";
+                    }
+                    path = path.Substring(0, path.Length - 1);
+                    path += attachment.Filename.Substring(attachment.Filename.Length - 4);
+
+                    Console.WriteLine("Received file from " + Context.User + ": " + attachment.Filename);
+                    Console.WriteLine("Saving as Waifus\\" + path);
+                    Console.WriteLine();
+                    new WebClient().DownloadFile(attachment.Url, "Waifus\\" + path);
+                    await Context.Channel.SendMessageAsync("Uploaded new waifu: " + path);
+                }
             }
             else
             {
-                await ReplyAsync("usage: \n```+waifu : retrieves your soulmate, scientifically.\n+waifu [name] : retrieves your soulmate, in a more specific fashion.");
+                List<Regex> regs = new List<Regex>() { new Regex("waifus\\\\.*" + arg.ToLower() + ".*(?:png|gif|jpg)") };
+                foreach(string s in tags)
+                {
+                    regs.Add(new Regex("waifus\\\\.*" + s.ToLower() + ".*(?:png|gif|jpg)"));
+                }
+                var files = GetFiles(@"Waifus\", "*").ToList();
+                files = files.Where(path => {
+                    string lowPath = path.ToLower();
+                    foreach (Regex reg in regs) {
+                        if (!reg.IsMatch(lowPath)) return false;
+                    }
+                    return true;
+                }).ToList();
+
+                if (files.Count() > 0) await Context.Channel.SendFileAsync(files[r.Next(files.Count())]);
+                else await Context.Channel.SendMessageAsync("No waifu found :(");
             }
         }
-
     }
 }
