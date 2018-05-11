@@ -26,7 +26,7 @@ namespace GameBot
             string botToken;
             if (File.Exists(@"token.txt"))
             {
-                botToken = System.IO.File.ReadAllText(@"token.txt");
+                botToken = File.ReadAllText(@"token.txt");
 
                 if (botToken != "") {
                     //event subscriptions
@@ -34,7 +34,7 @@ namespace GameBot
 
                     await RegisterCommandsAsync();
 
-                    await _client.LoginAsync(Discord.TokenType.Bot, botToken);
+                    await _client.LoginAsync(TokenType.Bot, botToken);
 
                     await _client.StartAsync();
 
@@ -64,7 +64,7 @@ namespace GameBot
         public async Task RegisterCommandsAsync()
         {
             _client.MessageReceived += HandleCommandAsync;
-            await _commands.AddModulesAsync(typeof(GameBot).GetTypeInfo().Assembly); //this is the problem of whatever problem you are having
+            await _commands.AddModulesAsync(typeof(GameBot).GetTypeInfo().Assembly); //this is the cause of whatever problem you are having
         }
 
         public async Task HandleCommandAsync(SocketMessage arg)

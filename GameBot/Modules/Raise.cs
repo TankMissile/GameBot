@@ -1,7 +1,4 @@
 ﻿using Discord.Commands;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace GameBot.Modules
@@ -21,7 +18,8 @@ namespace GameBot.Modules
             }
         }
 
-        [Command("Suicide")]
+        [Command("suicide")]
+        [Alias("dead")]
         public async Task SuicideAsync()
         {
             await ReplyAsync("```  ═╦═══╗\n" +
