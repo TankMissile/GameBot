@@ -8,24 +8,23 @@ using System.Threading.Tasks;
 
 namespace GameBot.Modules
 {
-    //Contains various RNG decision makers (coin flip, die roll, 8ball)
-    //[Group("rng")]
+    /// <summary> Contains various RNG decision makers (coin flip, die roll, 8ball) </summary>
     public class RNG : ModuleBase<SocketCommandContext>
     {
-        Random r = new Random();
+        public static Random random = new Random();
 
         [Command("flip")]
         [Summary("Flips a coin, resulting in Heads or Tails.")]
         public async Task FlipAsync([Remainder] string filler = null)
         {
-            await ReplyAsync("The Coin Flip of Destiny has chosen " + (r.Next(2) == 1 ? "Heads" : "Tails") + "!");
+            await ReplyAsync("The Coin Flip of Destiny has chosen " + (random.Next(2) == 1 ? "Heads" : "Tails") + "!");
         }
 
         [Command("roll")]
         [Summary("Roll a variable die, returning a number between 1 and max (default 100).")]
         public async Task RollAsync([Summary("Maximum number achievable")] int max = 100)
         {
-            int roll = r.Next(max) + 1;
+            int roll = random.Next(max) + 1;
 
             int firstDigit = roll;
             while (firstDigit >= 10)
@@ -48,30 +47,43 @@ namespace GameBot.Modules
             await ReplyAsync("The Magic 8 Ball says: " + GetRandomLineInFile(@"8ball.txt"));
         }
 
-        [Command("food")]
-        [Summary("Select a place or thing to eat, using the precise scientific method of choosing randomly.")]
-        public async Task FoodAsync(string arg1 = "", [Remainder] string arg2 = "")
+        [Group("food")]
+        public class Food : ModuleBase<SocketCommandContext>
         {
-            if (arg1 == "")
+            [Command]
+            public async Task FoodAsync()
             {
                 await ReplyAsync("You should get " + GetRandomLineInFile(@"food.txt") + " today.");
             }
-            else if (arg1.ToLower() == "add")
+
+            [Command("add")]
+            [Summary("Select a place or thing to eat, using the precise scientific method of choosing randomly.")]
+            public async Task AddFoodAsync([Remainder] string text = "")
             {
-                if (arg2 != "")
+                if (text != "")
                 {
-                    AppendStringToFile(@"food.txt", arg2);
-                    await ReplyAsync("Added " + arg2 + " to food list.");
+                    AppendStringToFile(@"food.txt", text);
+                    await ReplyAsync("Added " + text + " to food list.");
                 }
                 else
                 {
-                    await ReplyAsync("use: +food add [place or item]");
+                    await ReplyAsync("usage: `+food add [place or item]`");
                 }
-
             }
-            else
+
+            [Command("list")]
+            [Summary("Lists all options for food")]
+            public async Task ListFoodAsync()
             {
-                await ReplyAsync("Usage:\n```  +food : tells you where/what you should eat.\n+food add [place/item] : adds an entry to the food list.  Multiple words and punctuation are okay.```");
+                await ReplyAsync("```" + File.ReadAllText(@"food.txt") + "```");
+            }
+
+            [Command("help")]
+            [Summary("Provides help text for how to use the `food` command group.")]
+            public async Task FoodHelpAsync() {
+                await ReplyAsync("Usage:\n```" +
+                    "  +food : tells you where/what you should eat.\n" +
+                    "  +food add [place/item] : adds an entry to the food list.  Multiple words and punctuation are okay.```");
             }
         }
 
@@ -116,15 +128,15 @@ namespace GameBot.Modules
             }
         }
 
-        private string GetRandomLineInFile(string path)
+        protected static string GetRandomLineInFile(string path)
         {
             var options = File.ReadAllLines(path);
-            string msg = options[r.Next(options.Length)];
+            string msg = options[random.Next(options.Length)];
 
             return msg;
         }
 
-        private string GetLineInFile(string path, int i)
+        protected static string GetLineInFile(string path, int i)
         {
             var options = File.ReadAllLines(path);
             string msg = options[i];
@@ -132,7 +144,7 @@ namespace GameBot.Modules
             return msg;
         }
 
-        private void AppendStringToFile(string path, string msg, bool isNewLine = true)
+        protected static void AppendStringToFile(string path, string msg, bool isNewLine = true)
         {
             var writer = File.AppendText(path);
             writer.Write((isNewLine ? "\n" : "") + msg);

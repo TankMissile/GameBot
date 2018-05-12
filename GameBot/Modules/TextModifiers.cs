@@ -7,36 +7,75 @@ namespace GameBot.Modules
     //the class has to be public, you nimrod
     public class TextModifiers : ModuleBase<SocketCommandContext>
     {
-        Random r = new Random();
-
-        [Command("mock")]
-        public async Task MockAsync(string flag, [Remainder] string text)
+        [Group("mock")]
+        public class Mock : ModuleBase<SocketCommandContext>
         {
-            string sentence = "";
-            string separator = "";
+            [Command, Priority(-1)]
+            public async Task MockAsync([Remainder] string text)
+            {
+                char[] characters = ConvertCharacters(text);
 
-            if(flag == "-s")
-            {
-                separator = " ";
-            }
-            else
-            {
-                sentence += flag + " ";
+                await ReplyAsync(String.Join("", characters));
             }
 
-            sentence += text;
-
-            char[] characters = sentence.ToCharArray();
-
-            for(int i = 0; i < characters.Length; i++)
+            [Command("-s")]
+            public async Task MockSpacedAsync([Remainder] string text)
             {
-                if (Char.IsLetter(characters[i]) && r.NextDouble() >= 0.5)
+                char[] characters = ConvertCharacters(text);
+
+                await ReplyAsync(String.Join(" ", characters));
+            }
+
+            private char[] ConvertCharacters(string text)
+            {
+                char[] characters = text.ToCharArray();
+
+                bool wasUppercase = false;
+                short sinceFlip = 0;
+                for (int i = 0; i < characters.Length; i++)
                 {
-                    characters[i] = Char.ToUpper(characters[i]);
-                }
-            }
+                    if (Char.IsLetter(characters[i])) {
+                        if (sinceFlip > 1)
+                        {
+                            sinceFlip = 1;
+                            if (!wasUppercase)
+                            {
+                                characters[i] = Char.ToUpper(characters[i]);
+                            }
+                            wasUppercase = !wasUppercase;
+                            continue;
+                        }
 
-            await ReplyAsync(String.Join(separator, characters));
+                        if (RNG.random.NextDouble() >= 0.5)
+                        {
+                            if (!wasUppercase)
+                            {
+                                sinceFlip = 1;
+                            }
+                            else
+                            {
+                                sinceFlip++;
+                            }
+                            wasUppercase = true;
+                            characters[i] = Char.ToUpper(characters[i]);
+                        }
+                        else
+                        {
+                            if (wasUppercase)
+                            {
+                                sinceFlip = 1;
+                            }
+                            else
+                            {
+                                sinceFlip++;
+                            }
+                            wasUppercase = false;
+                        }
+                    }
+                }
+
+                return characters;
+            }
         }
     }
 }
