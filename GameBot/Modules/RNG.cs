@@ -43,7 +43,6 @@ namespace GameBot.Modules
         [Summary("Ask a yes or no question to the Sarcastic 8 Ball.")]
         public async Task EightBallAsync([Remainder] string question = null)
         {
-
             await ReplyAsync("The Magic 8 Ball says: " + GetRandomLineInFile(@"8ball.txt"));
         }
 
@@ -87,34 +86,51 @@ namespace GameBot.Modules
             }
         }
 
-        [Command("joke")]
-        [Summary("Tell an inside joke that normal people will need explained.")]
-        public async Task JokeAsync(string arg = "", [Remainder] string joke = "")
+        [Group("joke")]
+        public class Joke : ModuleBase<SocketCommandContext>
         {
-            if(arg == "")
+            [Command]
+            [Summary("Tell an inside joke that normal people will need explained.")]
+            public async Task JokeAsync()
             {
                 await ReplyAsync(GetRandomLineInFile(@"jokes.txt"), true);
             }
-            else if (arg.ToLower() == "add" && joke != "")
+
+            [Command("add")]
+            [Summary("Add a joke to the list")]
+            public async Task AddJokeAsync([Remainder] string joke)
             {
-                AppendStringToFile(@"jokes.txt", joke);
-                await ReplyAsync("Added joke to list with ID " + (File.ReadLines(@"jokes.txt").Count()));
+                if (joke != "")
+                {
+                    AppendStringToFile(@"jokes.txt", joke);
+                    await ReplyAsync("Added joke to list with ID " + (File.ReadLines(@"jokes.txt").Count()));
+                }
+                else
+                {
+                    await ReplyAsync("You didn't even make a joke! Boooooo!");
+                }
             }
-            else if (Int32.TryParse(arg, out int i))
+
+            [Command]
+            [Summary("Retrieve a specific joke, at the given index")]
+            public async Task GetJokeAsync(int i)
             {
-                await ReplyAsync(GetLineInFile(@"jokes.txt", i-1), true);
+                await ReplyAsync(GetLineInFile(@"jokes.txt", i - 1), true);
             }
-            else if (arg.ToLower() == "list")
+
+            [Command("list")]
+            [Summary("Sends a list of all available jokes, as a private message to the requester")]
+            public async Task ListJokesAsync()
             {
                 var dm = await Context.User.GetOrCreateDMChannelAsync();
 
                 string[] list = File.ReadAllLines(@"jokes.txt");
 
                 string msg = "";
-                for (i = 0; i < list.Length; i++)
+                for (int i = 0; i < list.Length; i++)
                 {
                     msg += (i + 1) + ". " + list[i] + "\n";
-                    if ((i+1) % 30 == 0)
+                    if ((i + 1) % 30 == 0)
                     {
                         await dm.SendMessageAsync("```" + msg + "```");
                         await Task.Delay(500);
@@ -122,9 +138,14 @@ namespace GameBot.Modules
                     }
                 }
             }
-            else
+
+            [Command("help")]
+            [Summary("Provides help text on how to use the `joke` commands")]
+            public async Task JokeHelpAsync()
             {
-                await ReplyAsync("usage:\n```  +joke [id] : Tells a specific joke if ID is provided or a random one if left blank.\n  +joke add [joke] : Adds [joke] to the joke list.  Multiple words and punctuation are okay.```");
+                await ReplyAsync("usage:\n```" +
+                    "  +joke [id] : Tells a specific joke if ID is provided or a random one if left blank.\n" +
+                    "  +joke add [joke] : Adds [joke] to the joke list.  Multiple words and punctuation are okay.```");
             }
         }
 
