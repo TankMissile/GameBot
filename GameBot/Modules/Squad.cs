@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace GameBot.Modules
 {
+    [Summary("Provides commands that involve the squad as a whole")]
     public class Squad : ModuleBase<SocketCommandContext>
     {
         [Command("squad")]

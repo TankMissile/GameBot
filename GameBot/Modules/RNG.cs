@@ -1,14 +1,14 @@
 ﻿using Discord.Commands;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace GameBot.Modules
 {
     /// <summary> Contains various RNG decision makers (coin flip, die roll, 8ball) </summary>
+    [Name("RNG")]
+    [Summary("Provides commands that return a *scientifically*-chosen result")]
     public class RNG : ModuleBase<SocketCommandContext>
     {
         public static Random random = new Random();
@@ -22,7 +22,7 @@ namespace GameBot.Modules
 
         [Command("roll")]
         [Summary("Roll a variable die, returning a number between 1 and max (default 100).")]
-        public async Task RollAsync([Summary("Maximum number achievable")] int max = 100)
+        public async Task RollAsync(int max = 100)
         {
             int roll = random.Next(max) + 1;
 
@@ -47,6 +47,7 @@ namespace GameBot.Modules
         }
 
         [Group("food")]
+        [Summary("Provides commands for selecting a place or thing to eat")]
         public class Food : ModuleBase<SocketCommandContext>
         {
             [Command]

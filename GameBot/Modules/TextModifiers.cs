@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 namespace GameBot.Modules
 {
     //the class has to be public, you nimrod
+    [Name("Text Modifiers")]
+    [Summary("Provides commands that take input and modify it in some way, spitting back the result")]
     public class TextModifiers : ModuleBase<SocketCommandContext>
     {
         [Group("mock")]

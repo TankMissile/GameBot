@@ -10,6 +10,8 @@ using System.Net;
 namespace GameBot.Modules
 {
     [Group("waifu")]
+    [Name("Waifu")]
+    [Summary("Provides commands involving trashy waifus")]
     public class Waifu : ModuleBase<SocketCommandContext>
     {
         static Waifu() {
@@ -19,7 +21,7 @@ namespace GameBot.Modules
             }
         }
 
-        [Command, Name("Waifu")]
+        [Command, Name("waifu")]
         [Summary("Retrieves your soulmate, scientifically.")]
         public async Task WaifuAsync()
         {
@@ -27,6 +29,35 @@ namespace GameBot.Modules
             var file = files[RNG.random.Next(files.Count())];
             Console.WriteLine("Sending {0} to channel {1}", file, Context.Channel.Name);
             await Context.Channel.SendFileAsync(file);
+        }
+
+        [Command, Name("waifu")]
+        [Priority(-1)]
+        [Summary("Searches the waifu pool for waifus containing all provided tags (as whole words).  If there are multiple, chooses one scientifically.")]
+        public async Task WaifuAsync(params string[] tags)
+        {
+            List<Regex> regs = new List<Regex>();
+            foreach (string s in tags)
+            {
+                regs.Add(new Regex("waifus.*[\\\\/_]" + s.ToLower() + "[_.].*(?:png|gif|jpg)"));
+            }
+            var files = GetFiles(@"Waifus\", "*").ToList();
+            files = files.Where(path => {
+                string lowPath = path.ToLower();
+                foreach (Regex reg in regs)
+                {
+                    if (!reg.IsMatch(lowPath)) return false;
+                }
+                return true;
+            }).ToList();
+
+            if (files.Count() > 0)
+            {
+                var file = files[RNG.random.Next(files.Count())];
+                Console.WriteLine("Sending {0} to channel {1}", file, Context.Channel.Name);
+                await Context.Channel.SendFileAsync(file);
+            }
+            else await ReplyAsync("No waifu found :(");
         }
 
         [Command("help"), Alias("?")]
@@ -81,35 +112,6 @@ namespace GameBot.Modules
                 new WebClient().DownloadFile(attachment.Url, "Waifus\\" + path);
                 await ReplyAsync("Uploaded new waifu: " + path);
             }
-        }
-
-        [Command, Priority(-1)]
-        [Summary("Searches the waifu pool for waifus containing all provided tags (as whole words).  If there are multiple, chooses one scientifically.")]
-        public async Task WaifuAsync(params string[] tags)
-        {
-            List<Regex> regs = new List<Regex>();
-            foreach(string s in tags)
-            {
-                regs.Add(new Regex("waifus.*[\\\\/_]" + s.ToLower() + "[_.].*(?:png|gif|jpg)"));
-            }
-            var files = GetFiles(@"Waifus\", "*").ToList();
-            files = files.Where(path => {
-                string lowPath = path.ToLower();
-                foreach (Regex reg in regs)
-                {
-                    Console.WriteLine("Testing {0} against {1}", lowPath, reg.ToString());
-                    if (!reg.IsMatch(lowPath)) return false;
-                }
-                return true;
-            }).ToList();
-
-            if (files.Count() > 0)
-            {
-                var file = files[RNG.random.Next(files.Count())];
-                Console.WriteLine("Sending {0} to channel {1}",  file, Context.Channel.Name);
-                await Context.Channel.SendFileAsync(file);
-            }
-            else await ReplyAsync("No waifu found :(");
         }
     }
 }

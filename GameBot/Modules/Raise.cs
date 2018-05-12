@@ -3,7 +3,8 @@ using System.Threading.Tasks;
 
 namespace GameBot.Modules
 {
-    public class Text : ModuleBase<SocketCommandContext>
+    [Summary("Provides commands used to alter the very threads of life and death")]
+    public class Raise : ModuleBase<SocketCommandContext>
     {
         [Command("raise")]
         public async Task RaiseAsync(string name = "")
