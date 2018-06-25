@@ -35,7 +35,7 @@ namespace GameBot.Modules
             }
             else
             {
-                await ReplyAsync(arg.ToUpper() + ", ASSEMBRUUUUU!!!");
+                await ReplyAsync(arg.ToUpper() + ", ASSEMBRUUUUU!!!", true);
             }
         }
 

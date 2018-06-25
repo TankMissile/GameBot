@@ -21,6 +21,7 @@ namespace GameBot.Modules
         }
 
         [Command("roll")]
+        [Alias("dice")]
         [Summary("Roll a variable die, returning a number between 1 and max (default 100).")]
         public async Task RollAsync(int max = 100)
         {
@@ -84,6 +85,69 @@ namespace GameBot.Modules
                 await ReplyAsync("Usage:\n```" +
                     "  +food : tells you where/what you should eat.\n" +
                     "  +food add [place/item] : adds an entry to the food list.  Multiple words and punctuation are okay.```");
+            }
+        }
+
+        [Group("rip")]
+        public class Rip : ModuleBase<SocketCommandContext>
+        {
+            [Command]
+            [Summary("Send off a fallen ally.")]
+            public async Task JokeAsync()
+            {
+                await ReplyAsync(GetRandomLineInFile(@"rip.txt"), true);
+            }
+
+            [Command("add")]
+            [Summary("Add a rip to the list")]
+            public async Task AddJokeAsync([Remainder] string joke)
+            {
+                if (joke != "")
+                {
+                    AppendStringToFile(@"rip.txt", joke);
+                    await ReplyAsync("Added rip to list with ID " + (File.ReadLines(@"rip.txt").Count()));
+                }
+                else
+                {
+                    await ReplyAsync("You didn't even say anything! Boooooo!");
+                }
+            }
+
+            [Command]
+            [Summary("Retrieve a specific rip, at the given index")]
+            public async Task GetJokeAsync(int i)
+            {
+                await ReplyAsync(GetLineInFile(@"rip.txt", i - 1), true);
+            }
+
+            [Command("list")]
+            [Summary("Sends a list of all available rip messages, as a private message to the requester")]
+            public async Task ListJokesAsync()
+            {
+                var dm = await Context.User.GetOrCreateDMChannelAsync();
+
+                string[] list = File.ReadAllLines(@"rip.txt");
+
+                string msg = "";
+                for (int i = 0; i < list.Length; i++)
+                {
+                    msg += (i + 1) + ". " + list[i] + "\n";
+                    if ((i + 1) % 30 == 0)
+                    {
+                        await dm.SendMessageAsync("```" + msg + "```");
+                        await Task.Delay(500);
+                        msg = "";
+                    }
+                }
+            }
+
+            [Command("help")]
+            [Summary("Provides help text on how to use the `rip` commands")]
+            public async Task JokeHelpAsync()
+            {
+                await ReplyAsync("usage:\n```" +
+                    "  +rip [id] : Tells a specific rip if ID is provided or a random one if left blank.\n" +
+                    "  +rip add [joke] : Adds [rip] to the rip list.  Multiple words and punctuation are okay.```");
             }
         }
 

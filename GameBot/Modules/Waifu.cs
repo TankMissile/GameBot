@@ -6,6 +6,7 @@ using System.Linq;
 using static System.IO.Directory;
 using System.Text.RegularExpressions;
 using System.Net;
+using Discord.WebSocket;
 
 namespace GameBot.Modules
 {
@@ -14,6 +15,15 @@ namespace GameBot.Modules
     [Summary("Provides commands involving trashy waifus")]
     public class Waifu : ModuleBase<SocketCommandContext>
     {
+        private readonly CommandService _commands;
+        private readonly IServiceProvider _services;
+
+        public Waifu(IServiceProvider prov, CommandService comm)
+        {
+            _commands = comm;
+            _services = prov;
+        }
+
         static Waifu() {
             if (!Exists(@"Waifus\"))
             {
@@ -60,15 +70,6 @@ namespace GameBot.Modules
             else await ReplyAsync("No waifu found :(");
         }
 
-        [Command("help"), Alias("?")]
-        [Summary("Gives some help on command usage")]
-        public async Task WaifuHelpAsync()
-        {
-            await ReplyAsync("usage: \n```+waifu : retrieves your soulmate, scientifically.\n" +
-                    "+waifu [name] : retrieves your soulmate, in a more specific fashion.\n" +
-                    "+waifu add [tags ...] : Upload a new waifu```");
-        }
-
         [Command("add")]
         [Summary("Adds a new waifu to the pool, with a filename corresponding to the provided tags.")]
         public async Task WaifuAddAsync(params string[] tags)
@@ -112,6 +113,22 @@ namespace GameBot.Modules
                 new WebClient().DownloadFile(attachment.Url, "Waifus\\" + path);
                 await ReplyAsync("Uploaded new waifu: " + path);
             }
+        }
+
+        [Command("best")]
+        [Summary("Scientifically calculates the best waifu of them all")]
+        public async Task GetBestWaifuAsync()
+        {
+            await ReplyAsync("#1 Waifu NA:");
+            await WaifuAsync();
+        }
+
+        [Command("worst")]
+        [Summary("Scientifically calculates the worst waifu of them all")]
+        public async Task GetWorstWaifuAsync()
+        {
+            await ReplyAsync("Trashiest cancer waifu of all time:");
+            await WaifuAsync();
         }
     }
 }

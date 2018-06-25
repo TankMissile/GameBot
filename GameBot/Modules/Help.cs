@@ -17,13 +17,13 @@ namespace GameBot.Modules
     public class Help : ModuleBase<SocketCommandContext>
     {
 
-        private readonly CommandService commands;
-        private readonly IServiceProvider provider;
+        private readonly CommandService _commands;
+        private readonly IServiceProvider _provider;
 
         public Help(IServiceProvider prov, CommandService comm)
         {
-            commands = comm;
-            provider = prov;
+            _commands = comm;
+            _provider = prov;
         }
 
         [Command]
@@ -53,7 +53,7 @@ namespace GameBot.Modules
 
             if (module == "")
             {
-                foreach (var mod in commands.Modules.Where(m => m.Parent == null).OrderBy(m => m.Name))
+                foreach (var mod in _commands.Modules.Where(m => m.Parent == null).OrderBy(m => m.Name))
                 {
                     AddHelp(mod, ref output, verbose);
                 }
@@ -65,7 +65,7 @@ namespace GameBot.Modules
             }
             else
             {
-                var mod = commands.Modules.FirstOrDefault(m => m.Name.ToLower() == module.ToLower());
+                var mod = _commands.Modules.FirstOrDefault(m => m.Name.ToLower() == module.ToLower());
                 if (mod == null) { await ReplyAsync("No module could be found with that name."); return; }
 
                 output.Title = mod.Name;
@@ -96,7 +96,7 @@ namespace GameBot.Modules
         {
             foreach(var command in module.Commands.OrderBy(c => c.Name))
             {
-                command.CheckPreconditionsAsync(Context, provider).GetAwaiter().GetResult();
+                command.CheckPreconditionsAsync(Context, _provider).GetAwaiter().GetResult();
                 AddCommand(command, ref builder, verbose);
             }
         }
@@ -109,7 +109,7 @@ namespace GameBot.Modules
                 f.WithValue($"{command.Summary}\n"
                     + (!string.IsNullOrEmpty(command.Remarks) ? $"({command.Remarks})\n" : "")
                     + (verbose && command.Parameters.Any() ? $"{GetParameterSummaries(command)}" : "")
-                    + (command.Aliases.Any() ? $"Aliases: {string.Join(", ", command.Aliases.Select(x => $"`+{x}`"))}\n" : "")
+                    + (command.Aliases.Count >= 2 ? $"Aliases: {string.Join(", ", command.Aliases.Select(x => $"`+{x}`"))}\n" : "")
                     + $"Usage: `+{GetPrefix(command)}{GetParametersInUsage(command)}`");
             });
         }
