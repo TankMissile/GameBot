@@ -13,26 +13,17 @@ namespace GameBot.Modules
     [Summary("Provides commands used to get information on this season's anime")]
     public class Anime : ModuleBase<SocketCommandContext>
     {
+        private delegate string Query(HtmlNode item);
+
         [Command("all")]
         public async Task AllAnimeAsync()
         {
             //Get the list of anime
-            var web = new HtmlWeb();
-            var document = await web.LoadFromWebAsync("https://www.crunchyroll.com/simulcastcalendar?filter=premium");
-            var page = document.DocumentNode;
+            var page = await getCRPage();
 
-            List<String> shows = new List<String>();
-            foreach(var item in page.QuerySelectorAll(".release"))
-            {
-                var title = WebUtility.HtmlDecode(item.QuerySelector(".season-name").InnerText.Trim());
-                shows.Add(title.Trim());
-            }
-
-            shows = shows.Distinct().ToList();
-            shows.Sort((x, y) => String.Compare(x, y));
+            List<String> shows = getCRAttributes(page, ".release", getCRName);
 
             string msg = String.Join("\n", shows.ToArray());
-            Console.WriteLine(msg);
             await ReplyAsync(msg);
         }
 
@@ -40,24 +31,52 @@ namespace GameBot.Modules
         public async Task AnimeAsync()
         {
             //Get the list of anime
-            var web = new HtmlWeb();
-            var document = await web.LoadFromWebAsync("https://www.crunchyroll.com/simulcastcalendar?filter=premium");
-            var page = document.DocumentNode;
+            var page = await getCRPage();
 
-            List<String> shows = new List<String>();
-            foreach (var item in page.QuerySelector(".today").QuerySelectorAll(".release"))
+            List<String> shows = getCRAttributes(page, ".today .release", getCRName, getCRLink);
+
+            string msg = String.Join("\n", shows.ToArray());
+            await ReplyAsync(msg);
+        }
+
+        //Parses the crunchyroll page, returning
+        private List<String> getCRAttributes(HtmlNode page, string selector, params Query[] queries)
+        {
+            var shows = new List<String>();
+
+            foreach (var item in page.QuerySelectorAll(selector))
             {
-                var title = WebUtility.HtmlDecode(item.QuerySelector(".season-name").InnerText.Trim());
-                var link = WebUtility.HtmlDecode(item.QuerySelector(".available-episode-link").Attributes["href"].Value);
-                shows.Add(title + " " + link);
+                var showAttributes = new List<String>();
+                foreach(var query in queries)
+                {
+                    showAttributes.Add(query(item));
+                }
+
+                shows.Add(String.Join(" ", showAttributes));
             }
 
             shows = shows.Distinct().ToList();
             shows.Sort((x, y) => String.Compare(x, y));
 
-            string msg = String.Join("\n", shows.ToArray());
-            Console.WriteLine(msg);
-            await ReplyAsync(msg);
+            return shows;
+        }
+
+        //Gets the calendar page from crunchyroll, as html
+        private async Task<HtmlNode> getCRPage()
+        {
+            var web = new HtmlWeb();
+            var document = await web.LoadFromWebAsync("https://www.crunchyroll.com/simulcastcalendar?filter=premium");
+            return document.DocumentNode;
+        }
+
+        private string getCRName(HtmlNode item)
+        {
+            return WebUtility.HtmlDecode(item.QuerySelector(".season-name").InnerText.Trim());
+        }
+
+        private string getCRLink(HtmlNode item)
+        {
+            return WebUtility.HtmlDecode(item.QuerySelector(".available-episode-link").Attributes["href"].Value);
         }
     }
 }
