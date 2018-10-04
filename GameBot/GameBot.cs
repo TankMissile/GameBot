@@ -16,6 +16,8 @@ namespace GameBot
         private IServiceProvider _services;
 
         static void Main(string[] args) => new GameBot().MainAsync().GetAwaiter().GetResult();
+        
+        public static ulong lastTtsUser = 0;
 
         public async Task MainAsync()
         {
@@ -88,6 +90,17 @@ namespace GameBot
                     Console.WriteLine(result.ErrorReason);
                 }
             }
+        }
+
+        public static bool tryUseTts(ulong user)
+        {
+            if (user == lastTtsUser)
+            {
+                return false;
+            }
+
+            lastTtsUser = user;
+            return true;
         }
     }
 }

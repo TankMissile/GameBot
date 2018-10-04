@@ -40,6 +40,14 @@ namespace GameBot.Modules
             await ReplyAsync(msg);
         }
 
+        [Command("rate")]
+        [Summary("Rates something out of 10")]
+        public async Task RateAsync(string subject = "")
+        {
+            double rating = random.Next(0, 100) / 10.0;
+            await ReplyAsync("I rate that " + subject + (subject.Length > 0 ? " " : "") + rating + "/10.");
+        }
+
         [Command("8ball")]
         [Summary("Ask a yes or no question to the Sarcastic 8 Ball.")]
         public async Task EightBallAsync([Remainder] string question = null)
@@ -95,7 +103,8 @@ namespace GameBot.Modules
             [Summary("Send off a fallen ally.")]
             public async Task JokeAsync()
             {
-                await ReplyAsync(GetRandomLineInFile(@"rip.txt"), true);
+                await ReplyAsync(GetRandomLineInFile(@"rip.txt"), GameBot.tryUseTts(Context.User.Id));
+                
             }
 
             [Command("add")]
@@ -117,7 +126,7 @@ namespace GameBot.Modules
             [Summary("Retrieve a specific rip, at the given index")]
             public async Task GetJokeAsync(int i)
             {
-                await ReplyAsync(GetLineInFile(@"rip.txt", i - 1), true);
+                await ReplyAsync(GetLineInFile(@"rip.txt", i - 1), GameBot.tryUseTts(Context.User.Id));
             }
 
             [Command("list")]
@@ -147,7 +156,7 @@ namespace GameBot.Modules
             {
                 await ReplyAsync("usage:\n```" +
                     "  +rip [id] : Tells a specific rip if ID is provided or a random one if left blank.\n" +
-                    "  +rip add [joke] : Adds [rip] to the rip list.  Multiple words and punctuation are okay.```");
+                    "  +rip add [rip] : Adds [rip] to the rip list.  Multiple words and punctuation are okay.```");
             }
         }
 
@@ -158,7 +167,7 @@ namespace GameBot.Modules
             [Summary("Tell an inside joke that normal people will need explained.")]
             public async Task JokeAsync()
             {
-                await ReplyAsync(GetRandomLineInFile(@"jokes.txt"), true);
+                await ReplyAsync(GetRandomLineInFile(@"jokes.txt"), GameBot.tryUseTts(Context.User.Id));
             }
 
             [Command("add")]
@@ -180,7 +189,7 @@ namespace GameBot.Modules
             [Summary("Retrieve a specific joke, at the given index")]
             public async Task GetJokeAsync(int i)
             {
-                await ReplyAsync(GetLineInFile(@"jokes.txt", i - 1), true);
+                await ReplyAsync(GetLineInFile(@"jokes.txt", i - 1), GameBot.tryUseTts(Context.User.Id));
             }
 
             [Command("list")]

@@ -49,7 +49,7 @@ namespace GameBot.Modules
             List<Regex> regs = new List<Regex>();
             foreach (string s in tags)
             {
-                regs.Add(new Regex("waifus.*[\\\\/_]" + s.ToLower() + "[_.].*(?:png|gif|jpg)"));
+                regs.Add(new Regex("waifus.*[\\\\/_ ]" + s.ToLower() + "[ _.].*(?:png|gif|jpg)"));
             }
             var files = GetFiles(@"Waifus\", "*").ToList();
             files = files.Where(path => {

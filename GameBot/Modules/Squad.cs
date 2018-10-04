@@ -39,6 +39,14 @@ namespace GameBot.Modules
             }
         }
 
+        [Command("duaqs")]
+        [Alias("elbmessa")]
+        [Summary(".duaqs eht elbmessA")]
+        public async Task DuaqsAsync([Remainder] string arg = "")
+        {
+            await ReplyAsync("!elbmessa ,duaqs", true);
+        }
+
         [Command("disperse")]
         [Summary("Disperse the squad!")]
         public async Task DisperseAsync([Remainder] string arg = "")
