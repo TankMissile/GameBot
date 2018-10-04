@@ -6,7 +6,6 @@ using System.Linq;
 using static System.IO.Directory;
 using System.Text.RegularExpressions;
 using System.Net;
-using Discord.WebSocket;
 
 namespace GameBot.Modules
 {
