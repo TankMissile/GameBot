@@ -1,11 +1,12 @@
-﻿using Discord.Commands;
-using System.Threading.Tasks;
-using HtmlAgilityPack;
+﻿using Discord;
+using Discord.Commands;
 using Fizzler.Systems.HtmlAgilityPack;
+using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading.Tasks;
 
 namespace GameBot.Modules
 {
@@ -22,9 +23,9 @@ namespace GameBot.Modules
         public async Task AllAnimeAsync()
         {
             //Get the list of anime
-            var page = await getCRPage(premiumCR);
+            var page = await GetCRPage(premiumCR);
 
-            List<String> shows = getCRAttributes(page, ".release", getCRName);
+            List<String> shows = GetCRAttributes(page, ".release", GetCRName);
 
             string msg = String.Join("\n", shows.ToArray());
             await ReplyAsync(msg);
@@ -36,9 +37,9 @@ namespace GameBot.Modules
         public async Task AllFreeAnimeAsync()
         {
             //Get the list of anime
-            var page = await getCRPage(freeCR);
+            var page = await GetCRPage(freeCR);
 
-            List<String> shows = getCRAttributes(page, ".release", getCRName);
+            List<String> shows = GetCRAttributes(page, ".release", GetCRName);
 
             string msg = String.Join("\n", shows.ToArray());
             await ReplyAsync(msg);
@@ -49,9 +50,9 @@ namespace GameBot.Modules
         public async Task AnimeAsync()
         {
             //Get the list of anime
-            var page = await getCRPage(premiumCR);
+            var page = await GetCRPage(premiumCR);
 
-            List<String> shows = getCRAttributes(page, ".today .release", getCRName, getCRLink);
+            List<String> shows = GetCRAttributes(page, ".today .release", GetCRName, GetCRLink);
 
             string msg = String.Join("\n", shows.ToArray());
             await ReplyAsync(msg);
@@ -62,16 +63,16 @@ namespace GameBot.Modules
         public async Task FreeAnimeAsync()
         {
             //Get the list of anime
-            var page = await getCRPage(freeCR);
+            var page = await GetCRPage(freeCR);
 
-            List<String> shows = getCRAttributes(page, ".today .release", getCRName, getCRLink);
+            List<String> shows = GetCRAttributes(page, ".today .release", GetCRName, GetCRLink);
 
             string msg = String.Join("\n", shows.ToArray());
             await ReplyAsync(msg);
         }
 
         //Parses the crunchyroll page, returning
-        private List<String> getCRAttributes(HtmlNode page, string selector, params Query[] queries)
+        private List<String> GetCRAttributes(HtmlNode page, string selector, params Query[] queries)
         {
             var shows = new List<String>();
 
@@ -91,21 +92,20 @@ namespace GameBot.Modules
 
             return shows;
         }
-
-        //Gets the calendar page from crunchyroll, as html
-        private async Task<HtmlNode> getCRPage(params string[] urlParams)
+        
+        private async Task<HtmlNode> GetCRPage(params string[] urlParams)
         {
             var web = new HtmlWeb();
             var document = await web.LoadFromWebAsync("https://www.crunchyroll.com/simulcastcalendar?" + String.Join("&", urlParams));
             return document.DocumentNode;
         }
 
-        private string getCRName(HtmlNode item)
+        private string GetCRName(HtmlNode item)
         {
             return WebUtility.HtmlDecode(item.QuerySelector(".season-name").InnerText.Trim());
         }
 
-        private string getCRLink(HtmlNode item)
+        private string GetCRLink(HtmlNode item)
         {
             return WebUtility.HtmlDecode(item.QuerySelector(".available-episode-link").Attributes["href"].Value);
         }
