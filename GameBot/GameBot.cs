@@ -26,9 +26,10 @@ namespace GameBot
             _services = new ServiceCollection().AddSingleton(_client).AddSingleton(_commands).BuildServiceProvider();
 
             string botToken;
-            if (File.Exists(@"token.txt"))
+            string tokenPath = GetPath("token.txt");
+            if (File.Exists(tokenPath))
             {
-                botToken = File.ReadAllText(@"token.txt");
+                botToken = File.ReadAllText(tokenPath);
 
                 if (botToken != "") {
                     //event subscriptions
@@ -44,13 +45,12 @@ namespace GameBot
                 }
                 else
                 {
-                    Console.WriteLine("Error!  No bot token.  Enter your bot's token into token.txt in the root directory of this bot.");
+                    ExitNoToken(tokenPath);
                 }
             }
             else
             {
-                File.Create(@"token.txt");
-                Console.WriteLine("Error!  No bot token.  Enter your bot's token into token.txt in the root directory of this bot");
+                ExitNoToken(tokenPath, true);
             }
 
             await Task.Delay(-1);
@@ -66,7 +66,7 @@ namespace GameBot
         public async Task RegisterCommandsAsync()
         {
             _client.MessageReceived += HandleCommandAsync;
-            await _commands.AddModulesAsync(typeof(GameBot).GetTypeInfo().Assembly); //this is the cause of whatever problem you are having
+            await _commands.AddModulesAsync(typeof(GameBot).GetTypeInfo().Assembly);
         }
 
         public async Task HandleCommandAsync(SocketMessage arg)
@@ -92,7 +92,27 @@ namespace GameBot
             }
         }
 
-        public static bool tryUseTts(ulong user)
+        public static string GetPath(string localPath)
+        {
+            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "GameBot\\", localPath);
+            if (!Directory.Exists(Path.GetDirectoryName(path))) Directory.CreateDirectory(Path.GetDirectoryName(path));
+
+            if (Path.HasExtension(path) && !File.Exists(path))
+            {
+                if (File.Exists(localPath))
+                {
+                    File.Copy(localPath, path);
+                }
+                else
+                {
+                    File.Create(path);
+                }
+            }
+
+            return path;
+        }
+
+        public static bool TryUseTts(ulong user)
         {
             if (user == lastTtsUser)
             {
@@ -101,6 +121,15 @@ namespace GameBot
 
             lastTtsUser = user;
             return true;
+        }
+
+        private static void ExitNoToken(string tokenPath, bool create = false)
+        {
+            if(create) File.Create(tokenPath);
+            Console.WriteLine("Error!  No bot token.  Enter your bot's token into the file " + tokenPath);
+            Console.Write("Press any key to exit...");
+            Console.ReadKey();
+            Environment.Exit(1);
         }
     }
 }

@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 namespace GameBot.Modules
 {
     [Group("anime")]
+    [Name("Anime")]
     [Summary("Provides commands used to get information on this season's anime")]
     public class Anime : ModuleBase<SocketCommandContext>
     {
@@ -19,32 +20,13 @@ namespace GameBot.Modules
         private const string CR_TODAY = ".today";
         private const string CR_RELEASE = ".release";
         private const string CR_CALENDAR = "simulcastcalendar";
+        private const string CR_SEASON_NAME = ".season-name";
+        private const string CR_EPISODE_LINK = ".available-episode-link";
         private const string CR_LINEUP = "lineup";
         private const string CR_LINEUP_TITLE = ".lineup-series-title";
         private const string CR_LINEUP_CELL = ".lineup-portrait-grid > li";
 
-        [Command("all")]
-        [Summary("Provides a list of this week's new anime")]
-        public async Task AllAnimeAsync()
-        {
-            try
-            {
-                //Get the list of anime
-                var page = await GetCRPage(CR_LINEUP);
-
-                List<String> shows = GetCRAttributes(page, CR_LINEUP_CELL, GetCRLineupTitle);
-
-                string msg = String.Join("\n", shows.ToArray());
-                await ReplyAsync(msg);
-            }
-            catch (Exception e)
-            {
-                Console.Write(e.StackTrace);
-                await ReplyAsync("Oops! There was a problem retrieving anime info.  Try reading a book instead!");
-            }
-        }
-
-        [Command]
+        [Command, Name("anime")]
         [Summary("Provides a list of today's new anime with links to the new episode")]
         public async Task AnimeAsync()
         {
@@ -68,6 +50,27 @@ namespace GameBot.Modules
 
             string msg = String.Join("\n", shows.ToArray());
             await ReplyAsync(msg);
+        }
+
+        [Command("all")]
+        [Summary("Provides a list of this week's new anime")]
+        public async Task AllAnimeAsync()
+        {
+            try
+            {
+                //Get the list of anime
+                var page = await GetCRPage(CR_LINEUP);
+
+                List<String> shows = GetCRAttributes(page, CR_LINEUP_CELL, GetCRLineupTitle);
+
+                string msg = String.Join("\n", shows.ToArray());
+                await ReplyAsync(msg);
+            }
+            catch (Exception e)
+            {
+                Console.Write(e.StackTrace);
+                await ReplyAsync("Oops! There was a problem retrieving anime info.  Try reading a book instead!");
+            }
         }
 
         //Parses the crunchyroll page, returning
@@ -104,12 +107,12 @@ namespace GameBot.Modules
 
         private string GetCRCalendarName(HtmlNode item)
         {
-            return WebUtility.HtmlDecode(item.QuerySelector(".season-name").InnerText.Trim());
+            return WebUtility.HtmlDecode(item.QuerySelector(CR_SEASON_NAME).InnerText.Trim());
         }
 
         private string GetCRCalendarLink(HtmlNode item)
         {
-            return WebUtility.HtmlDecode(item.QuerySelector(".available-episode-link").Attributes["href"].Value);
+            return WebUtility.HtmlDecode(item.QuerySelector(CR_EPISODE_LINK).Attributes["href"].Value);
         }
 
         private string GetCRLineupTitle(HtmlNode item)

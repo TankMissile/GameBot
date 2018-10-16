@@ -11,11 +11,11 @@ namespace GameBot.Modules
         {
             if (name.ToLower() == "gamebot" || name == "")
             {
-                await ReplyAsync("I LIVE!!!!", GameBot.tryUseTts(Context.User.Id));
+                await ReplyAsync("I LIVE!!!!", GameBot.TryUseTts(Context.User.Id));
             }
             else
             {
-                await ReplyAsync("COME BACK TO US, " + name.ToUpper() + "!!!", GameBot.tryUseTts(Context.User.Id));
+                await ReplyAsync("COME BACK TO US, " + name.ToUpper() + "!!!", GameBot.TryUseTts(Context.User.Id));
             }
         }
 

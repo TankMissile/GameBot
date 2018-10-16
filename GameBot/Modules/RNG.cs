@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace GameBot.Modules
 {
-    /// <summary> Contains various RNG decision makers (coin flip, die roll, 8ball) </summary>
+    /// <summary> Contains various RNG decision makers (coin flip, die roll, 8ball, jokes, food, etc) </summary>
     [Name("RNG")]
     [Summary("Provides commands that return a *scientifically*-chosen result")]
     public class RNG : ModuleBase<SocketCommandContext>
@@ -103,7 +103,7 @@ namespace GameBot.Modules
             [Summary("Send off a fallen ally.")]
             public async Task JokeAsync()
             {
-                await ReplyAsync(GetRandomLineInFile(@"rip.txt"), GameBot.tryUseTts(Context.User.Id));
+                await ReplyAsync(GetRandomLineInFile(@"rip.txt"), GameBot.TryUseTts(Context.User.Id));
                 
             }
 
@@ -126,7 +126,7 @@ namespace GameBot.Modules
             [Summary("Retrieve a specific rip, at the given index")]
             public async Task GetJokeAsync(int i)
             {
-                await ReplyAsync(GetLineInFile(@"rip.txt", i - 1), GameBot.tryUseTts(Context.User.Id));
+                await ReplyAsync(GetLineInFile(@"rip.txt", i - 1), GameBot.TryUseTts(Context.User.Id));
             }
 
             [Command("list")]
@@ -167,7 +167,7 @@ namespace GameBot.Modules
             [Summary("Tell an inside joke that normal people will need explained.")]
             public async Task JokeAsync()
             {
-                await ReplyAsync(GetRandomLineInFile(@"jokes.txt"), GameBot.tryUseTts(Context.User.Id));
+                await ReplyAsync(GetRandomLineInFile(@"jokes.txt"), GameBot.TryUseTts(Context.User.Id));
             }
 
             [Command("add")]
@@ -189,7 +189,7 @@ namespace GameBot.Modules
             [Summary("Retrieve a specific joke, at the given index")]
             public async Task GetJokeAsync(int i)
             {
-                await ReplyAsync(GetLineInFile(@"jokes.txt", i - 1), GameBot.tryUseTts(Context.User.Id));
+                await ReplyAsync(GetLineInFile(@"jokes.txt", i - 1), GameBot.TryUseTts(Context.User.Id));
             }
 
             [Command("list")]
@@ -198,19 +198,8 @@ namespace GameBot.Modules
             {
                 var dm = await Context.User.GetOrCreateDMChannelAsync();
 
-                string[] list = File.ReadAllLines(@"jokes.txt");
-
-                string msg = "";
-                for (int i = 0; i < list.Length; i++)
-                {
-                    msg += (i + 1) + ". " + list[i] + "\n";
-                    if ((i + 1) % 30 == 0)
-                    {
-                        await dm.SendMessageAsync("```" + msg + "```");
-                        await Task.Delay(500);
-                        msg = "";
-                    }
-                }
+                await ReplyAsync("Here's the current list of jokes.  Open it in something that shows you line numbers!");
+                await Context.Channel.SendFileAsync(GameBot.GetPath(@"jokes.txt"));
             }
 
             [Command("help")]
@@ -225,7 +214,15 @@ namespace GameBot.Modules
 
         protected static string GetRandomLineInFile(string path)
         {
+            path = GameBot.GetPath(path);
+
             var options = File.ReadAllLines(path);
+
+            if(options.Count() == 0)
+            {
+                return "This file is empty!  Try being more creative!";
+            }
+
             string msg = options[random.Next(options.Length)];
 
             return msg;
@@ -233,7 +230,20 @@ namespace GameBot.Modules
 
         protected static string GetLineInFile(string path, int i)
         {
+            path = GameBot.GetPath(path);
+
             var options = File.ReadAllLines(path);
+            
+            if (options.Length == 0)
+            {
+                return "This file is empty!  Try being more creative!";
+            }
+
+            if(i < 0 || i > options.Length)
+            {
+                return "Hey!  That's not a real line number!  Try being less of a dope!";
+            }
+
             string msg = options[i];
 
             return msg;
@@ -241,7 +251,7 @@ namespace GameBot.Modules
 
         protected static void AppendStringToFile(string path, string msg, bool isNewLine = true)
         {
-            var writer = File.AppendText(path);
+            var writer = File.AppendText(GameBot.GetPath(path));
             writer.Write((isNewLine ? "\n" : "") + msg);
             writer.Flush();
             writer.Close();

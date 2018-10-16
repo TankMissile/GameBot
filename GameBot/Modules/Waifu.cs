@@ -16,6 +16,7 @@ namespace GameBot.Modules
     {
         private readonly CommandService _commands;
         private readonly IServiceProvider _services;
+        private static readonly string PATH = GameBot.GetPath(@"Waifus\");
 
         public Waifu(IServiceProvider prov, CommandService comm)
         {
@@ -23,18 +24,17 @@ namespace GameBot.Modules
             _services = prov;
         }
 
-        static Waifu() {
-            if (!Exists(@"Waifus\"))
-            {
-                CreateDirectory(@"Waifus\");
-            }
-        }
-
         [Command, Name("waifu")]
         [Summary("Retrieves your soulmate, scientifically.")]
         public async Task WaifuAsync()
         {
-            var files = GetFiles(@"Waifus\");
+            var files = GetFiles(PATH);
+            if(files.Length == 0)
+            {
+                await ReplyAsync("There are no waifus! Try finding some 3D women!");
+                return;
+            }
+
             var file = files[RNG.random.Next(files.Count())];
             Console.WriteLine("Sending {0} to channel {1}", file, Context.Channel.Name);
             await Context.Channel.SendFileAsync(file);
@@ -50,7 +50,7 @@ namespace GameBot.Modules
             {
                 regs.Add(new Regex("waifus.*[\\\\/_ ]" + s.ToLower() + "[ _.].*(?:png|gif|jpg)"));
             }
-            var files = GetFiles(@"Waifus\", "*").ToList();
+            var files = GetFiles(PATH, "*").ToList();
             files = files.Where(path => {
                 string lowPath = path.ToLower();
                 foreach (Regex reg in regs)
@@ -108,8 +108,8 @@ namespace GameBot.Modules
                 path += attachment.Filename.Substring(attachment.Filename.Length - 4);
 
                 Console.WriteLine("\nReceived file from {0}: {1}", Context.User, attachment.Filename);
-                Console.WriteLine("Saving as Waifus\\{0}", path);
-                new WebClient().DownloadFile(attachment.Url, "Waifus\\" + path);
+                Console.WriteLine("Saving as {0}{1}", PATH, path);
+                new WebClient().DownloadFile(attachment.Url, PATH + path);
                 await ReplyAsync("Uploaded new waifu: " + path);
             }
         }
