@@ -31,7 +31,7 @@ namespace GameBot.Modules
             var files = GetFiles(PATH);
             if(files.Length == 0)
             {
-                await ReplyAsync("There are no waifus! Try finding some 3D women!");
+                await ReplyAsync(RNG.Error.GetRandomErrorMessage("There are no waifus!"));
                 return;
             }
 

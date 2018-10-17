@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace GameBot.Modules
@@ -211,16 +212,46 @@ namespace GameBot.Modules
                     "  +joke add [joke] : Adds [joke] to the joke list.  Multiple words and punctuation are okay.```");
             }
         }
-
-        protected static string GetRandomLineInFile(string path)
+        
+        [Name("Error")]
+        [Summary("Provides various error messages")]
+        public class Error : ModuleBase<SocketCommandContext>
         {
-            path = GameBot.GetPath(path);
+            [Command("error")]
+            [Summary("Returns an error")]
+            public async Task ErrorAsync()
+            {
+                await ReplyAsync(GetRandomErrorMessage("Error!"));
+            }
+            
+            public static string GetRandomErrorMessage(string preface = "")
+            {
+                return (preface + " " + GetRandomLineInFile("errors.txt")).Trim();
+            }
+
+            [Command("error add")]
+            [Summary("Adds a new error message")]
+            public async Task AddErrorAsync([Remainder] string error)
+            {
+                AppendStringToFile("error.txt", error);
+                await ReplyAsync("Error added!");
+            }
+        }
+
+        protected static string GetRandomLineInFile(string localpath)
+        {
+            string path = GameBot.GetPath(localpath);
 
             var options = File.ReadAllLines(path);
 
             if(options.Count() == 0)
             {
-                return "This file is empty!  Try being more creative!";
+                if(localpath == "errors.txt")
+                {
+                    return "How can you not even have error messages?!";
+                }
+
+                return Error.GetRandomErrorMessage("This file is empty!");
             }
 
             string msg = options[random.Next(options.Length)];
@@ -236,12 +267,12 @@ namespace GameBot.Modules
             
             if (options.Length == 0)
             {
-                return "This file is empty!  Try being more creative!";
+                return Error.GetRandomErrorMessage("This file is empty!");
             }
 
             if(i < 0 || i > options.Length)
             {
-                return "Hey!  That's not a real line number!  Try being less of a dope!";
+                return Error.GetRandomErrorMessage("Hey!  That's not a real line number!");
             }
 
             string msg = options[i];

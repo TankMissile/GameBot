@@ -88,6 +88,7 @@ namespace GameBot
                 if (!result.IsSuccess)
                 {
                     Console.WriteLine(result.ErrorReason);
+                    await context.Channel.SendMessageAsync(Modules.RNG.Error.GetRandomErrorMessage("Something weird happened!"));
                 }
             }
         }
