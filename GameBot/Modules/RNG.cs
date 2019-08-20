@@ -14,11 +14,26 @@ namespace GameBot.Modules
     {
         public static Random random = new Random();
 
+        [Command("8ball")]
+        [Summary("Ask a yes or no question to the Sarcastic 8 Ball.")]
+        public async Task EightBallAsync([Remainder] string question = null)
+        {
+            await ReplyAsync("The Magic 8 Ball says: " + GetRandomLineInFile(@"8ball.txt"));
+        }
+
         [Command("flip")]
         [Summary("Flips a coin, resulting in Heads or Tails.")]
         public async Task FlipAsync([Remainder] string filler = null)
         {
             await ReplyAsync("The Coin Flip of Destiny has chosen " + (random.Next(2) == 1 ? "Heads" : "Tails") + "!");
+        }
+
+        [Command("rate")]
+        [Summary("Rates something out of 10")]
+        public async Task RateAsync(string subject = "")
+        {
+            double rating = random.Next(0, 100) / 10.0;
+            await ReplyAsync("I rate that " + subject + (subject.Length > 0 ? " " : "") + rating + "/10.");
         }
 
         [Command("roll")]
@@ -41,25 +56,12 @@ namespace GameBot.Modules
             await ReplyAsync(msg);
         }
 
-        [Command("rate")]
-        [Summary("Rates something out of 10")]
-        public async Task RateAsync(string subject = "")
-        {
-            double rating = random.Next(0, 100) / 10.0;
-            await ReplyAsync("I rate that " + subject + (subject.Length > 0 ? " " : "") + rating + "/10.");
-        }
-
-        [Command("8ball")]
-        [Summary("Ask a yes or no question to the Sarcastic 8 Ball.")]
-        public async Task EightBallAsync([Remainder] string question = null)
-        {
-            await ReplyAsync("The Magic 8 Ball says: " + GetRandomLineInFile(@"8ball.txt"));
-        }
-
         [Group("food")]
         [Summary("Provides commands for selecting a place or thing to eat")]
         public class Food : ModuleBase<SocketCommandContext>
         {
+            int lastId = -1;
+
             [Command]
             public async Task FoodAsync()
             {
@@ -81,13 +83,6 @@ namespace GameBot.Modules
                 }
             }
 
-            [Command("list")]
-            [Summary("Lists all options for food")]
-            public async Task ListFoodAsync()
-            {
-                await ReplyAsync("```" + File.ReadAllText(@"food.txt") + "```");
-            }
-
             [Command("help")]
             [Summary("Provides help text for how to use the `food` command group.")]
             public async Task FoodHelpAsync() {
@@ -95,17 +90,32 @@ namespace GameBot.Modules
                     "  +food : tells you where/what you should eat.\n" +
                     "  +food add [place/item] : adds an entry to the food list.  Multiple words and punctuation are okay.```");
             }
+
+            [Command("list")]
+            [Summary("Lists all options for food")]
+            public async Task ListFoodAsync()
+            {
+                await ReplyAsync("```" + File.ReadAllText(@"food.txt") + "```");
+            }
         }
 
         [Group("rip")]
         public class Rip : ModuleBase<SocketCommandContext>
         {
+            int lastId = -1;
+
             [Command]
             [Summary("Send off a fallen ally.")]
             public async Task JokeAsync()
             {
-                await ReplyAsync(GetRandomLineInFile(@"rip.txt"), GameBot.TryUseTts(Context.User.Id));
-                
+                await ReplyAsync(GetRandomLineInFile(@"rip.txt", ref lastId), GameBot.TryUseTts(Context.User.Id));
+            }
+
+            [Command]
+            [Summary("Retrieve a specific rip, at the given index")]
+            public async Task GetJokeAsync(int i)
+            {
+                await ReplyAsync(GetLineInFile(@"rip.txt", i - 1), GameBot.TryUseTts(Context.User.Id));
             }
 
             [Command("add")]
@@ -115,7 +125,7 @@ namespace GameBot.Modules
                 if (joke != "")
                 {
                     AppendStringToFile(@"rip.txt", joke);
-                    await ReplyAsync("Added rip to list with ID " + (File.ReadLines(@"rip.txt").Count()));
+                    await ReplyAsync("Added rip to list with ID " + (File.ReadLines(GameBot.GetPath(@"rip.txt")).Count()));
                 }
                 else
                 {
@@ -123,11 +133,13 @@ namespace GameBot.Modules
                 }
             }
 
-            [Command]
-            [Summary("Retrieve a specific rip, at the given index")]
-            public async Task GetJokeAsync(int i)
+            [Command("help")]
+            [Summary("Provides help text on how to use the `rip` commands")]
+            public async Task JokeHelpAsync()
             {
-                await ReplyAsync(GetLineInFile(@"rip.txt", i - 1), GameBot.TryUseTts(Context.User.Id));
+                await ReplyAsync("usage:\n```" +
+                    "  +rip [id] : Tells a specific rip if ID is provided or a random one if left blank.\n" +
+                    "  +rip add [rip] : Adds [rip] to the rip list.  Multiple words and punctuation are okay.```");
             }
 
             [Command("list")]
@@ -150,40 +162,18 @@ namespace GameBot.Modules
                     }
                 }
             }
-
-            [Command("help")]
-            [Summary("Provides help text on how to use the `rip` commands")]
-            public async Task JokeHelpAsync()
-            {
-                await ReplyAsync("usage:\n```" +
-                    "  +rip [id] : Tells a specific rip if ID is provided or a random one if left blank.\n" +
-                    "  +rip add [rip] : Adds [rip] to the rip list.  Multiple words and punctuation are okay.```");
-            }
         }
 
         [Group("joke")]
         public class Joke : ModuleBase<SocketCommandContext>
         {
+            int lastId = -1;
+
             [Command]
             [Summary("Tell an inside joke that normal people will need explained.")]
             public async Task JokeAsync()
             {
-                await ReplyAsync(GetRandomLineInFile(@"jokes.txt"), GameBot.TryUseTts(Context.User.Id));
-            }
-
-            [Command("add")]
-            [Summary("Add a joke to the list")]
-            public async Task AddJokeAsync([Remainder] string joke)
-            {
-                if (joke != "")
-                {
-                    AppendStringToFile(@"jokes.txt", joke);
-                    await ReplyAsync("Added joke to list with ID " + (File.ReadLines(@"jokes.txt").Count()));
-                }
-                else
-                {
-                    await ReplyAsync("You didn't even make a joke! Boooooo!");
-                }
+                await ReplyAsync(GetRandomLineInFile(@"jokes.txt", ref lastId), GameBot.TryUseTts(Context.User.Id));
             }
 
             [Command]
@@ -191,6 +181,35 @@ namespace GameBot.Modules
             public async Task GetJokeAsync(int i)
             {
                 await ReplyAsync(GetLineInFile(@"jokes.txt", i - 1), GameBot.TryUseTts(Context.User.Id));
+            }
+
+            [Command("add")]
+            [Summary("Add a joke to the list")]
+            public async Task AddJokeAsync([Remainder] string joke)
+            {
+                while (joke.StartsWith("+"))
+                {
+                    joke = joke.Substring(1);
+                }
+
+                if (joke != "")
+                {
+                    AppendStringToFile(@"jokes.txt", joke);
+                    await ReplyAsync("Added joke to list with ID " + (File.ReadLines(GameBot.GetPath(@"jokes.txt")).Count()));
+                }
+                else
+                {
+                    await ReplyAsync("You didn't even make a joke! Boooooo!");
+                }
+            }
+
+            [Command("help")]
+            [Summary("Provides help text on how to use the `joke` commands")]
+            public async Task JokeHelpAsync()
+            {
+                await ReplyAsync("usage:\n```" +
+                    "  +joke [id] : Tells a specific joke if ID is provided or a random one if left blank.\n" +
+                    "  +joke add [joke] : Adds [joke] to the joke list.  Multiple words and punctuation are okay.```");
             }
 
             [Command("list")]
@@ -202,17 +221,69 @@ namespace GameBot.Modules
                 await ReplyAsync("Here's the current list of jokes.  Open it in something that shows you line numbers!");
                 await Context.Channel.SendFileAsync(GameBot.GetPath(@"jokes.txt"));
             }
+        }
+
+        [Group("insult")]
+        public class Insult : ModuleBase<SocketCommandContext>
+        {
+            readonly string FILENAME = @"insults.txt";
+
+            int lastId = -1;
+
+            [Command]
+            [Summary("Insult someone savagely")]
+            public async Task InsultAsync()
+            {
+                await ReplyAsync(GetRandomLineInFile(FILENAME, ref lastId), GameBot.TryUseTts(Context.User.Id));
+            }
+
+            [Command]
+            [Summary("Retrieve a specific insult, at the given index")]
+            public async Task GetInsultAsync(int i)
+            {
+                await ReplyAsync(GetLineInFile(FILENAME, i - 1), GameBot.TryUseTts(Context.User.Id));
+            }
+
+            [Command("add")]
+            [Summary("Add an insult to the list")]
+            public async Task AddInsultAsync([Remainder] string insult)
+            {
+                while (insult.StartsWith("+"))
+                {
+                    insult = insult.Substring(1);
+                }
+
+                if (insult != "")
+                {
+                    AppendStringToFile(FILENAME, insult);
+                    await ReplyAsync("Added insult to list with ID " + (File.ReadLines(GameBot.GetPath(FILENAME)).Count()));
+                }
+                else
+                {
+                    await ReplyAsync("You didn't even make an insult! Boooooo!");
+                }
+            }
 
             [Command("help")]
-            [Summary("Provides help text on how to use the `joke` commands")]
-            public async Task JokeHelpAsync()
+            [Summary("Provides help text on how to use the `insult` commands")]
+            public async Task InsultHelpAsync()
             {
                 await ReplyAsync("usage:\n```" +
-                    "  +joke [id] : Tells a specific joke if ID is provided or a random one if left blank.\n" +
-                    "  +joke add [joke] : Adds [joke] to the joke list.  Multiple words and punctuation are okay.```");
+                    "  +insult [id] : Tells a specific insult if ID is provided or a random one if left blank.\n" +
+                    "  +insult add [insult] : Adds [insult] to the insult list.  Multiple words and punctuation are okay.```");
+            }
+
+            [Command("list")]
+            [Summary("Sends a list of all available insults, as a private message to the requester")]
+            public async Task ListInsultsAsync()
+            {
+                var dm = await Context.User.GetOrCreateDMChannelAsync();
+
+                await ReplyAsync("Here's the current list of insults.  Open it in something that shows you line numbers!");
+                await Context.Channel.SendFileAsync(GameBot.GetPath(FILENAME));
             }
         }
-        
+
         [Name("Error")]
         [Summary("Provides various error messages")]
         public class Error : ModuleBase<SocketCommandContext>
@@ -238,7 +309,7 @@ namespace GameBot.Modules
             }
         }
 
-        protected static string GetRandomLineInFile(string localpath)
+        protected static string GetRandomLineInFile(string localpath, ref int lastId)
         {
             string path = GameBot.GetPath(localpath);
 
@@ -254,9 +325,17 @@ namespace GameBot.Modules
                 return Error.GetRandomErrorMessage("This file is empty!");
             }
 
-            string msg = options[random.Next(options.Length)];
+            int id = random.Next(options.Length);
+            string msg = options[id];
+            lastId = id;
 
             return msg;
+        }
+
+        protected static string GetRandomLineInFile(string path)
+        {
+            int id = -1;
+            return GetRandomLineInFile(path, ref id);
         }
 
         protected static string GetLineInFile(string path, int i)
@@ -277,7 +356,7 @@ namespace GameBot.Modules
 
             string msg = options[i];
 
-            return msg;
+            return msg; 
         }
 
         protected static void AppendStringToFile(string path, string msg, bool isNewLine = true)

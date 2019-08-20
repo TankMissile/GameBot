@@ -11,6 +11,8 @@ namespace GameBot
 {
     class GameBot
     {
+        public static bool ENABLE_TTS_LIMIT = false;
+
         private DiscordSocketClient _client;
         private CommandService _commands;
         private IServiceProvider _services;
@@ -50,7 +52,7 @@ namespace GameBot
             }
             else
             {
-                ExitNoToken(tokenPath, true);
+                ExitNoToken(tokenPath);
             }
 
             await Task.Delay(-1);
@@ -106,7 +108,7 @@ namespace GameBot
                 }
                 else
                 {
-                    File.Create(path);
+                    File.Create(path).Close();
                 }
             }
 
@@ -115,6 +117,11 @@ namespace GameBot
 
         public static bool TryUseTts(ulong user)
         {
+            if (!GameBot.ENABLE_TTS_LIMIT)
+            {
+                return true;
+            }
+
             if (user == lastTtsUser)
             {
                 return false;
@@ -124,9 +131,8 @@ namespace GameBot
             return true;
         }
 
-        private static void ExitNoToken(string tokenPath, bool create = false)
+        private static void ExitNoToken(string tokenPath)
         {
-            if(create) File.Create(tokenPath);
             Console.WriteLine("Error!  No bot token.  Enter your bot's token into the file " + tokenPath);
             Console.Write("Press any key to exit...");
             Console.ReadKey();

@@ -22,7 +22,13 @@ namespace GameBot.Modules
 
             if (File.Exists(path))
             {
-                var lines = await File.ReadAllLinesAsync(path);
+                var lines = File.ReadAllLines(path);
+                if(lines.Count() == 0)
+                {
+                    await ReplyAsync("There are no items in your to-do list!");
+                    return;
+                }
+
                 StringBuilder msgBuilder = new StringBuilder("To-do list for ").Append(Context.User.Username).Append(":\n```");
                 for(int i = 0; i < lines.Length; i++)
                 {
@@ -35,12 +41,12 @@ namespace GameBot.Modules
             }
             else
             {
-                await ReplyAsync("I don't have a to-do list for you.  Start one with `+todo add My task`");
+                await ReplyAsync("You haven't started a to-do list!");
             }
         }
 
         [Command("remove")]
-        [Alias("done", "delete")]
+        [Alias("done", "delete", "minus")]
         [Summary("Removes an item from the user's to-do list")]
         async Task RemoveTodoAsync(params int[] ids)
         {
@@ -68,12 +74,16 @@ namespace GameBot.Modules
         [Summary("Adds a to-do to the user's list")]
         async Task AddTodoAsync([Remainder] string todo)
         {
-            var file = File.AppendText(GetUserTodoPath(Context.User));
-            await file.WriteAsync("\n" + todo);
-            await file.FlushAsync();
-            file.Close();
+            await AddTodoSimpleAsync(todo);
+        }
 
-            await ReplyAsync("To-do added for " + Context.User.Username + " with id " + (File.ReadLines(GetUserTodoPath(Context.User)).Count()));
+        [Command("clear")]
+        [Summary("Clears all todo's")]
+        async Task ClearTodosAsync()
+        {
+            await ReplyAsync("Clearing Todos for user " + Context.User.Username + ". Here's what I deleted:");
+            await TodoListAsync();
+            File.WriteAllLines(GetUserTodoPath(Context.User), new List<string>());
         }
 
 
@@ -82,17 +92,39 @@ namespace GameBot.Modules
         [Summary("Adds a to-do to the user's list")]
         async Task AddTodoSimpleAsync([Remainder] string todo)
         {
-            var file = File.AppendText(GetUserTodoPath(Context.User));
-            await file.WriteAsync("\n" + todo);
-            await file.FlushAsync();
-            file.Close();
-
-            await ReplyAsync("To-do added for " + Context.User.Username + " with id " + (File.ReadLines(GetUserTodoPath(Context.User)).Count()));
+            int id = await AppendTodoToFile(todo);
+            if(id == -1)
+            {
+                await ReplyAsync(RNG.Error.GetRandomErrorMessage("There was a problem adding your to-do!"));
+                return;
+            }
+            await ReplyAsync("To-do added for " + Context.User.Username + " with id " + id);
         }
 
         string GetUserTodoPath(Discord.WebSocket.SocketUser user)
         {
             return GameBot.GetPath("Todo_Lists/" + user.Username + "_todo.txt");
+        }
+
+        async Task<int> AppendTodoToFile(string line)
+        {
+            bool newLine = File.ReadAllText(GetUserTodoPath(Context.User)).Length > 0;
+            var file = File.AppendText(GetUserTodoPath(Context.User));
+            try
+            {
+                await file.WriteAsync((newLine ? "\n" : "") + line);
+                await file.FlushAsync();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                file.Close();
+                return -1;
+            }
+
+            file.Close();
+
+            return File.ReadAllLines(GetUserTodoPath(Context.User)).Count();
         }
     }
 }

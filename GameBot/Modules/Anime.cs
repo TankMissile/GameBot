@@ -107,7 +107,7 @@ namespace GameBot.Modules
 
         private string GetCRCalendarName(HtmlNode item)
         {
-            return WebUtility.HtmlDecode(item.QuerySelector(CR_SEASON_NAME).InnerText.Trim());
+            return WebUtility.HtmlDecode(item.QuerySelector(CR_SEASON_NAME).InnerText.Trim()).Replace("@", "a");
         }
 
         private string GetCRCalendarLink(HtmlNode item)
@@ -117,7 +117,7 @@ namespace GameBot.Modules
 
         private string GetCRLineupTitle(HtmlNode item)
         {
-            return WebUtility.HtmlDecode(item.QuerySelector(CR_LINEUP_TITLE).InnerText.Trim());
+            return WebUtility.HtmlDecode(item.QuerySelector(CR_LINEUP_TITLE).InnerText.Trim()).Replace("@", "a");
         }
     }
 }

@@ -14,6 +14,12 @@ namespace GameBot.Modules
         [Summary("Assemble the squad!")]
         public async Task SquadAsync([Remainder] string arg = "")
         {
+            if (Context.User.Username.ToLower().Contains("pham") || Context.User.Username.ToLower().Contains("kaito") || Context.User.Username.ToLower().Contains("hyodo"))
+            {
+                await ReplyAsync("You have forfeit your summon privileges.");
+                return;
+            }
+
             if(arg == "")
             {
                 await ReplyAsync("SQUAD, ASSEMBLE!!!", true);
@@ -29,6 +35,12 @@ namespace GameBot.Modules
         [Summary("Assemble the skuado!")]
         public async Task SkuadoAsync([Remainder] string arg = "")
         {
+            if (Context.User.Username.Contains("apham"))
+            {
+                await ReplyAsync("You have forfeit your summon privileges.");
+                return;
+            }
+
             if (arg == "")
             {
                 await ReplyAsync("SKUADO, ASSEMBRUUUUU!!!", true);

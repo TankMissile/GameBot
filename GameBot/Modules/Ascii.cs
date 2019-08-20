@@ -39,5 +39,12 @@ namespace GameBot.Modules
         {
             await ReplyAsync("ヽ(´ー｀)ﾉヽ(´ー｀)ﾉヽ(´ー｀)ﾉ");
         }
+        
+        [Command("shrug")]
+        [Summary("Shrugs nonchalantly")]
+        public async Task ShrugAsync()
+        {
+            await ReplyAsync("¯\\_(ツ)_/¯");
+        }
     }
 }
