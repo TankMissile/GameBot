@@ -18,6 +18,8 @@ namespace GameBot.Modules
         private readonly IServiceProvider _services;
         private static readonly string PATH = GameBot.GetPath(@"Waifus\");
 
+        private static string[] lastTags = null;
+
         public Waifu(IServiceProvider prov, CommandService comm)
         {
             _commands = comm;
@@ -34,9 +36,11 @@ namespace GameBot.Modules
                 await ReplyAsync(RNG.Error.GetRandomErrorMessage("There are no waifus!"));
                 return;
             }
-
+            
             var file = files[RNG.random.Next(files.Count())];
-            Console.WriteLine("Sending {0} to channel {1}", file, Context.Channel.Name);
+            Console.WriteLine($"Sending {file} to channel {Context.Channel.Name}");
+            var reg = new Regex(@"[\\/]([\w_ ]+).(?:png|gif|jpeg|jpeg)");
+            lastTags = reg.Match(file).Groups[1].Value.Split("_");
             await Context.Channel.SendFileAsync(file);
         }
 
@@ -48,7 +52,7 @@ namespace GameBot.Modules
             List<Regex> regs = new List<Regex>();
             foreach (string s in tags)
             {
-                regs.Add(new Regex("waifus.*[\\\\/_ ]" + s.ToLower() + "[ _.].*(?:png|gif|jpg)"));
+                regs.Add(new Regex(@"waifus.*[\\/_ ]" + s.ToLower() + @"[ _.].*(?:png|gif|jpg)"));
             }
             var files = GetFiles(PATH, "*").ToList();
             files = files.Where(path => {
@@ -128,6 +132,13 @@ namespace GameBot.Modules
         {
             await ReplyAsync("Trashiest cancer waifu of all time:");
             await WaifuAsync();
+        }
+
+        [Command("who"), Alias("which", "last", "dare")]
+        [Summary("Reveals the tags of the last randomly-summoned waifu")]
+        public async Task LastAsync()
+        {
+            await ReplyAsync($"Last random waifu had these tags: {string.Join(", ", lastTags.ToArray())}");
         }
     }
 }
