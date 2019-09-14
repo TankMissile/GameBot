@@ -1,9 +1,12 @@
 ﻿using Discord.Commands;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using Discord.WebSocket;
+
+using GameBot.Modules.DB;
 
 namespace GameBot.Modules
 {
@@ -91,84 +94,176 @@ namespace GameBot.Modules
 
         [Group("food")]
         [Summary("Provides commands for selecting a place or thing to eat")]
-        public class Food : ModuleBase<SocketCommandContext>
+        public class FoodCommands : ModuleBase<SocketCommandContext>
         {
             [Command]
+            [Summary("Select a place to eat, using the extremely scientific method of choosing randomly.")]
             public async Task FoodAsync()
             {
-                await ReplyAsync("You should get " + GetRandomLineInFile(@"food.txt") + " today.");
+                var food = Food.GetRandom();
+                await ReplyAsync(food.Value, GameBot.TryUseTts(Context.User.Id));
+            }
+
+            [Command]
+            [Summary("Retrieve a specific food, added by a given user")]
+            public async Task GetFoodCreatorAsync(SocketUser creator)
+            {
+                await ReplyAsync(Food.GetRandomByCreator(creator.Username).Value, GameBot.TryUseTts(Context.User.Id));
             }
 
             [Command("add")]
-            [Summary("Select a place or thing to eat, using the precise scientific method of choosing randomly.")]
-            public async Task AddFoodAsync([Remainder] string text = "")
+            [Summary("Add a food to the list")]
+            public async Task AddFoodAsync([Remainder] string foodString)
             {
-                if (text != "")
+                await AddFoodCreatorAsync(Context.User, foodString);
+            }
+
+            [Command("add")]
+            [Summary("Add a food to the list")]
+            public async Task AddFoodCreatorAsync(SocketUser creator, [Remainder] string foodString)
+            {
+                if (foodString != "")
                 {
-                    AppendStringToFile(@"food.txt", text);
-                    await ReplyAsync("Added " + text + " to food list.");
+                    var food = new Food(foodString, creator.Username);
+                    food.Save();
+                    await ReplyAsync($"Added food to list for {creator.Username}");
                 }
                 else
                 {
-                    await ReplyAsync("usage: `+food add [place or item]`");
+                    await ReplyAsync("You didn't even specify a food! Boooooo!");
                 }
             }
 
+            [Command("set creator")]
+            [Summary("Resets the creator of a specified food or list of foods")]
+            public async Task EditFoodCreator(SocketUser creator, params int[] foodIds)
+            {
+                var foods = Food.GetByIds(foodIds);
+
+                foreach (Food j in foods)
+                {
+                    j.Creator = creator.Username;
+                    j.Save();
+                }
+
+                await ReplyAsync($"Foods attributed to {creator.Username}");
+            }
+
             [Command("help")]
-            [Summary("Provides help text for how to use the `food` command group.")]
-            public async Task FoodHelpAsync() {
-                await ReplyAsync("Usage:\n```" +
-                    "  +food : tells you where/what you should eat.\n" +
-                    "  +food add [place/item] : adds an entry to the food list.  Multiple words and punctuation are okay.```");
+            [Summary("Provides help text on how to use the `food` commands")]
+            public async Task FoodHelpAsync()
+            {
+                await ReplyAsync("usage:\n```" +
+                    "  +food [id] : Retrieves a specific food if ID is provided or a random one if left blank.\n" +
+                    "  +food add [food] : Adds [food] to the food list.  Multiple words and punctuation are okay.```");
             }
 
             [Command("list")]
-            [Summary("Lists all options for food")]
-            public async Task ListFoodAsync()
+            [Summary("Sends a list of all available foods")]
+            public async Task ListFoodsAsync()
             {
-                await ReplyAsync("```" + File.ReadAllText(@"food.txt") + "```");
+                var foods = Food.GetAll();
+
+                await Context.Channel.SendFileAsync(ListToStream(foods), "foods.txt", "The current list of foods:");
+            }
+
+            [Command("list")]
+            [Summary("Sends a list of all foods added by a user")]
+            public async Task ListFoodsAsync(SocketUser creator)
+            {
+                var foods = Food.GetByCreator(creator.Username);
+
+                await Context.Channel.SendFileAsync(ListToStream(foods), "foods.txt", $"Foods added by {creator.Username}:");
+            }
+
+            [Command("delete"), Alias("remove")]
+            [Summary("Delete a specific food, at the given index")]
+            public async Task DeleteFoodAsync(int i)
+            {
+                var food = Food.GetById(i);
+                Food.DeleteById(i);
+                await ReplyAsync($"Food {i} deleted.  Final telling: {food.Value}");
             }
         }
 
         [Group("insult")]
-        public class Insult : ModuleBase<SocketCommandContext>
+        public class InsultCommands : ModuleBase<SocketCommandContext>
         {
-            readonly string FILENAME = @"insults.txt";
-
             static int lastId = -1;
 
             [Command]
-            [Summary("Insult someone savagely")]
+            [Summary("Tell an inside insult that normal people will need explained.")]
             public async Task InsultAsync()
             {
-                await ReplyAsync(GetRandomLineInFile(FILENAME, ref lastId), GameBot.TryUseTts(Context.User.Id));
+                var insult = Insult.GetRandom();
+                lastId = insult.Id;
+                await ReplyAsync(insult.Value, GameBot.TryUseTts(Context.User.Id));
             }
 
             [Command]
             [Summary("Retrieve a specific insult, at the given index")]
             public async Task GetInsultAsync(int i)
             {
-                await ReplyAsync(GetLineInFile(FILENAME, i - 1), GameBot.TryUseTts(Context.User.Id));
+                await ReplyAsync(Insult.GetById(i).Value, GameBot.TryUseTts(Context.User.Id));
+            }
+
+            [Command]
+            [Summary("Retrieve a specific insult, added by a given user")]
+            public async Task GetInsultCreatorAsync(SocketUser creator)
+            {
+                await ReplyAsync(Insult.GetRandomByCreator(creator.Username).Value, GameBot.TryUseTts(Context.User.Id));
+            }
+
+            [Command("who")]
+            [Alias("creator")]
+            [Summary("Retrieve a specific insult, at the given index")]
+            public async Task GetInsultCreatorAsync(int i)
+            {
+                var insult = Insult.GetById(i);
+                await ReplyAsync($"Insult {insult.Id} was added by {insult.Creator}");
             }
 
             [Command("add")]
-            [Summary("Add an insult to the list")]
-            public async Task AddInsultAsync([Remainder] string insult)
+            [Summary("Add a insult to the list")]
+            public async Task AddInsultAsync([Remainder] string insultString)
             {
-                while (insult.StartsWith("+"))
+                await AddInsultCreatorAsync(Context.User, insultString);
+            }
+
+            [Command("add")]
+            [Summary("Add a insult to the list")]
+            public async Task AddInsultCreatorAsync(SocketUser creator, [Remainder] string insultString)
+            {
+                while (insultString.StartsWith("+"))
                 {
-                    insult = insult.Substring(1);
+                    insultString = insultString.Substring(1);
                 }
 
-                if (insult != "")
+                if (insultString != "")
                 {
-                    AppendStringToFile(FILENAME, insult);
-                    await ReplyAsync("Added insult to list with ID " + (File.ReadLines(GameBot.GetPath(FILENAME)).Count()));
+                    var insult = new Insult(insultString, creator.Username);
+                    insult.Save();
+                    await ReplyAsync($"Added insult to list with ID {insult.Id}");
                 }
                 else
                 {
-                    await ReplyAsync("You didn't even make an insult! Boooooo!");
+                    await ReplyAsync("You didn't even make a insult! Boooooo!");
                 }
+            }
+
+            [Command("set creator")]
+            [Summary("Resets the creator of a specified insult or list of insults")]
+            public async Task EditInsultCreator(SocketUser creator, params int[] insultIds)
+            {
+                var insults = Insult.GetByIds(insultIds);
+
+                foreach (Insult j in insults)
+                {
+                    j.Creator = creator.Username;
+                    j.Save();
+                }
+
+                await ReplyAsync($"Insults attributed to {creator.Username}");
             }
 
             [Command("help")]
@@ -184,10 +279,18 @@ namespace GameBot.Modules
             [Summary("Sends a list of all available insults, as a private message to the requester")]
             public async Task ListInsultsAsync()
             {
-                var dm = await Context.User.GetOrCreateDMChannelAsync();
+                var insults = Insult.GetAll();
 
-                await ReplyAsync("Here's the current list of insults.  Open it in something that shows you line numbers!");
-                await Context.Channel.SendFileAsync(GameBot.GetPath(FILENAME));
+                await Context.Channel.SendFileAsync(ListToStream(insults), "insults.txt", "The current list of insults:");
+            }
+
+            [Command("list")]
+            [Summary("Sends a list of all insults added by a user")]
+            public async Task ListInsultsAsync(SocketUser creator)
+            {
+                var insults = Insult.GetByCreator(creator.Username);
+
+                await Context.Channel.SendFileAsync(ListToStream(insults), "insults.txt", $"Insults added by {creator.Username}:");
             }
 
             [Command("which"), Alias("last")]
@@ -201,47 +304,95 @@ namespace GameBot.Modules
                 }
                 await ReplyAsync("The last random insult was: " + lastId);
             }
+
+            [Command("delete"), Alias("remove")]
+            [Summary("Retrieve a specific insult, at the given index")]
+            public async Task DeleteInsultAsync(int i)
+            {
+                var insult = Insult.GetById(i);
+                Insult.DeleteById(i);
+                await ReplyAsync($"Insult {i} deleted.  Final telling: {insult.Value}");
+            }
         }
 
         [Group("joke")]
-        public class Joke : ModuleBase<SocketCommandContext>
+        public class JokeCommands : ModuleBase<SocketCommandContext>
         {
-            readonly string FILENAME = @"jokes.txt";
-
             static int lastId = -1;
 
             [Command]
             [Summary("Tell an inside joke that normal people will need explained.")]
             public async Task JokeAsync()
             {
-                await ReplyAsync(GetRandomLineInFile(FILENAME, ref lastId), GameBot.TryUseTts(Context.User.Id));
+                var joke = Joke.GetRandom();
+                lastId = joke.Id;
+                await ReplyAsync(joke.Value, GameBot.TryUseTts(Context.User.Id));
             }
 
             [Command]
             [Summary("Retrieve a specific joke, at the given index")]
             public async Task GetJokeAsync(int i)
             {
-                await ReplyAsync(GetLineInFile(FILENAME, i - 1), GameBot.TryUseTts(Context.User.Id));
+                await ReplyAsync(Joke.GetById(i).Value, GameBot.TryUseTts(Context.User.Id));
+            }
+
+            [Command]
+            [Summary("Retrieve a specific joke, added by a given user")]
+            public async Task GetJokeCreatorAsync(SocketUser creator)
+            {
+                await ReplyAsync(Joke.GetRandomByCreator(creator.Username).Value, GameBot.TryUseTts(Context.User.Id));
+            }
+
+            [Command("who")]
+            [Alias("creator")]
+            [Summary("Retrieve a specific joke, at the given index")]
+            public async Task GetJokeCreatorAsync(int i)
+            {
+                var joke = Joke.GetById(i);
+                await ReplyAsync($"Joke {joke.Id} was added by {joke.Creator}");
             }
 
             [Command("add")]
             [Summary("Add a joke to the list")]
-            public async Task AddJokeAsync([Remainder] string joke)
+            public async Task AddJokeAsync([Remainder] string jokeString)
             {
-                while (joke.StartsWith("+"))
+                await AddJokeCreatorAsync(Context.User, jokeString);
+            }
+
+            [Command("add")]
+            [Summary("Add a joke to the list")]
+            public async Task AddJokeCreatorAsync(SocketUser creator, [Remainder] string jokeString)
+            {
+                while (jokeString.StartsWith("+"))
                 {
-                    joke = joke.Substring(1);
+                    jokeString = jokeString.Substring(1);
                 }
 
-                if (joke != "")
+                if (jokeString != "")
                 {
-                    AppendStringToFile(FILENAME, joke);
-                    await ReplyAsync("Added joke to list with ID " + (File.ReadLines(GameBot.GetPath(@"jokes.txt")).Count()));
+                    var joke = new Joke(jokeString, creator.Username);
+                    joke.Save();
+                    await ReplyAsync($"Added joke to list with ID {joke.Id}");
                 }
                 else
                 {
                     await ReplyAsync("You didn't even make a joke! Boooooo!");
                 }
+            }
+
+            [Command("set creator")]
+            [Summary("Resets the creator of a specified joke or list of jokes")]
+            public async Task EditJokeCreator(SocketUser creator, params int[] jokeIds)
+            {
+                var jokes = Joke.GetByIds(jokeIds);
+
+                foreach(Joke j in jokes)
+                {
+                    j.Creator = creator.Username;
+                    j.Save();
+                }
+
+                await ReplyAsync($"Jokes attributed to {creator.Username}");
             }
 
             [Command("help")]
@@ -257,10 +408,18 @@ namespace GameBot.Modules
             [Summary("Sends a list of all available jokes, as a private message to the requester")]
             public async Task ListJokesAsync()
             {
-                var dm = await Context.User.GetOrCreateDMChannelAsync();
+                var jokes = Joke.GetAll();
 
-                await ReplyAsync("Here's the current list of jokes.  Open it in something that shows you line numbers!");
-                await Context.Channel.SendFileAsync(GameBot.GetPath(FILENAME));
+                await Context.Channel.SendFileAsync(ListToStream(jokes), "jokes.txt", "The current list of jokes:");
+            }
+
+            [Command("list")]
+            [Summary("Sends a list of all jokes added by a user")]
+            public async Task ListJokesAsync(SocketUser creator)
+            {
+                var jokes = Joke.GetByCreator(creator.Username);
+
+                await Context.Channel.SendFileAsync(ListToStream(jokes), "jokes.txt", $"Jokes added by {creator.Username}:");
             }
 
             [Command("which"), Alias("last")]
@@ -274,41 +433,95 @@ namespace GameBot.Modules
                 }
                 await ReplyAsync("The last random joke was: " + lastId);
             }
+            
+            [Command("delete"), Alias("remove")]
+            [Summary("Retrieve a specific joke, at the given index")]
+            public async Task DeleteJokeAsync(int i)
+            {
+                var joke = Joke.GetById(i);
+                Joke.DeleteById(i);
+                await ReplyAsync($"Joke {i} deleted.  Final telling: {joke.Value}");
+            }
         }
 
         [Group("rip")]
-        public class Rip : ModuleBase<SocketCommandContext>
+        public class RipCommands : ModuleBase<SocketCommandContext>
         {
-            readonly string FILENAME = @"rip.txt";
             static int lastId = -1;
 
             [Command]
-            [Summary("Send off a fallen ally.")]
+            [Summary("Write an obituary.")]
             public async Task RipAsync()
             {
-                await ReplyAsync(GetRandomLineInFile(FILENAME, ref lastId), GameBot.TryUseTts(Context.User.Id));
+                var rip = Rip.GetRandom();
+                lastId = rip.Id;
+                await ReplyAsync(rip.Value, GameBot.TryUseTts(Context.User.Id));
             }
 
             [Command]
             [Summary("Retrieve a specific rip, at the given index")]
             public async Task GetRipAsync(int i)
             {
-                await ReplyAsync(GetLineInFile(FILENAME, i - 1), GameBot.TryUseTts(Context.User.Id));
+                await ReplyAsync(Rip.GetById(i).Value, GameBot.TryUseTts(Context.User.Id));
+            }
+
+            [Command]
+            [Summary("Retrieve a specific rip, added by a given user")]
+            public async Task GetRipCreatorAsync(SocketUser creator)
+            {
+                await ReplyAsync(Rip.GetRandomByCreator(creator.Username).Value, GameBot.TryUseTts(Context.User.Id));
+            }
+
+            [Command("who")]
+            [Alias("creator")]
+            [Summary("Retrieve a specific rip, at the given index")]
+            public async Task GetRipCreatorAsync(int i)
+            {
+                var rip = Rip.GetById(i);
+                await ReplyAsync($"Rip {rip.Id} was added by {rip.Creator}");
             }
 
             [Command("add")]
             [Summary("Add a rip to the list")]
-            public async Task AddRipAsync([Remainder] string joke)
+            public async Task AddRipAsync([Remainder] string ripString)
             {
-                if (joke != "")
+                await AddRipCreatorAsync(Context.User, ripString);
+            }
+
+            [Command("add")]
+            [Summary("Add a rip to the list")]
+            public async Task AddRipCreatorAsync(SocketUser creator, [Remainder] string ripString)
+            {
+                while (ripString.StartsWith("+"))
                 {
-                    AppendStringToFile(FILENAME, joke);
-                    await ReplyAsync("Added rip to list with ID " + (File.ReadLines(GameBot.GetPath(@"rip.txt")).Count()));
+                    ripString = ripString.Substring(1);
+                }
+
+                if (ripString != "")
+                {
+                    var rip = new Rip(ripString, creator.Username);
+                    rip.Save();
+                    await ReplyAsync($"Added rip to list with ID {rip.Id}");
                 }
                 else
                 {
-                    await ReplyAsync("You didn't even say anything! Boooooo!");
+                    await ReplyAsync("You didn't even make a rip! Boooooo!");
                 }
+            }
+
+            [Command("set creator")]
+            [Summary("Resets the creator of a specified rip or list of rips")]
+            public async Task EditRipCreator(SocketUser creator, params int[] ripIds)
+            {
+                var rips = Rip.GetByIds(ripIds);
+
+                foreach (Rip j in rips)
+                {
+                    j.Creator = creator.Username;
+                    j.Save();
+                }
+
+                await ReplyAsync($"Rips attributed to {creator.Username}");
             }
 
             [Command("help")]
@@ -321,36 +534,42 @@ namespace GameBot.Modules
             }
 
             [Command("list")]
-            [Summary("Sends a list of all available rip messages, as a private message to the requester")]
-            public async Task ListRipAsync()
+            [Summary("Sends a list of all available rips, as a private message to the requester")]
+            public async Task ListRipsAsync()
             {
-                var dm = await Context.User.GetOrCreateDMChannelAsync();
+                var rips = Rip.GetAll();
 
-                string[] list = File.ReadAllLines(GameBot.GetPath(FILENAME));
+                await Context.Channel.SendFileAsync(ListToStream(rips), "rips.txt", "The current list of rips:");
+            }
 
-                string msg = "";
-                for (int i = 0; i < list.Length; i++)
-                {
-                    msg += (i + 1) + ". " + list[i] + "\n";
-                    if ((i + 1) % 30 == 0)
-                    {
-                        await dm.SendMessageAsync("```" + msg + "```");
-                        await Task.Delay(500);
-                        msg = "";
-                    }
-                }
+            [Command("list")]
+            [Summary("Sends a list of all rips added by a user")]
+            public async Task ListRipsAsync(SocketUser creator)
+            {
+                var rips = Rip.GetByCreator(creator.Username);
+
+                await Context.Channel.SendFileAsync(ListToStream(rips), "rips.txt", $"Rips added by {creator.Username}:");
             }
 
             [Command("which"), Alias("last")]
-            [Summary("Displays the ID of the last random joke")]
+            [Summary("Displays the ID of the last random rip")]
             public async Task WhichRipAsync()
             {
                 if (lastId == -1)
                 {
-                    await ReplyAsync("I haven't killed anybody (yet)!");
+                    await ReplyAsync("I haven't told a random rip yet!");
                     return;
                 }
                 await ReplyAsync("The last random rip was: " + lastId);
+            }
+
+            [Command("delete"), Alias("remove")]
+            [Summary("Retrieve a specific rip, at the given index")]
+            public async Task DeleteRipAsync(int i)
+            {
+                var rip = Rip.GetById(i);
+                Rip.DeleteById(i);
+                await ReplyAsync($"Rip {i} deleted.  Final telling: {rip.Value}");
             }
         }
 
@@ -410,6 +629,19 @@ namespace GameBot.Modules
             writer.Write((isNewLine ? "\n" : "") + msg);
             writer.Flush();
             writer.Close();
+        }
+
+        protected static Stream ListToStream<T>(List<T> items){
+            MemoryStream ms = new MemoryStream();
+            TextWriter tw = new StreamWriter(ms);
+            foreach (var item in items)
+            {
+                tw.WriteLine(item.ToString());
+            }
+            tw.Flush();
+            ms.Seek(0, SeekOrigin.Begin);
+
+            return ms;
         }
     }
 }

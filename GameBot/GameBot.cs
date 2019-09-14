@@ -16,7 +16,6 @@ namespace GameBot
         private DiscordSocketClient _client;
         private CommandService _commands;
         private IServiceProvider _services;
-
         static void Main(string[] args) => new GameBot().MainAsync().GetAwaiter().GetResult();
         
         public static ulong lastTtsUser = 0;
